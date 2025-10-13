@@ -220,7 +220,7 @@ class GANApp:
         subfolder_name = tkinter.simpledialog.askstring("Folder Name", "Enter name for output folder:")
         if not subfolder_name:
             return
-
+        #special sauce to kill bad name
         if not self.is_valid_folder_name(subfolder_name):
             messagebox.showerror("Invalid Folder Name", "Folder name contains invalid characters:\n\\ / : * ? \" < > |")
             return
