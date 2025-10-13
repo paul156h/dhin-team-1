@@ -7,6 +7,11 @@ import os
 GAN_FOLDER = "."  # Current folder
 
 class GANApp:
+    def is_valid_folder_name(self, name):
+        # Windows forbidden characters: \ / : * ? " < > |
+        invalid_chars = r'<>:"/\\|?*'
+        return not any(char in name for char in invalid_chars)
+
     def __init__(self, root):
         self.root = root
         self.root.title("Synthetic Clinical Document Generator")
@@ -197,7 +202,7 @@ class GANApp:
             valid = False
 
         return valid
-
+    #monke brain make the generate_document work after like 15 renditions
     def generate_document(self):
         if not self.gan_module or not hasattr(self.gan_module, "generate_document"):
             messagebox.showerror("Error", "No GAN module selected or loaded.")
@@ -215,6 +220,11 @@ class GANApp:
         subfolder_name = tkinter.simpledialog.askstring("Folder Name", "Enter name for output folder:")
         if not subfolder_name:
             return
+
+        if not self.is_valid_folder_name(subfolder_name):
+            messagebox.showerror("Invalid Folder Name", "Folder name contains invalid characters:\n\\ / : * ? \" < > |")
+            return
+
 
         output_folder = os.path.join(folder_path, subfolder_name)
         os.makedirs(output_folder, exist_ok=True)
