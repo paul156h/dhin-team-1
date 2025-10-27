@@ -61,6 +61,12 @@ datasets/
 generated_*
 output/
 
+# Output data
+outputs/
+output*
+results/
+*.out
+
 # Logs
 *.log
 logs/
