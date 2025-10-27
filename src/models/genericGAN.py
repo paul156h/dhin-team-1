@@ -1,5 +1,9 @@
 # genericGAN.py
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -45,7 +49,9 @@ def train_gan(epochs=50, batch_size=64, latent_dim=100):
         transforms.ToTensor(),
         transforms.Normalize([0.5], [0.5])
     ])
-    dataset = datasets.MNIST(root='.', train=True, download=True, transform=transform)
+    # Use project data directory
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
+    dataset = datasets.MNIST(root=data_dir, train=True, download=True, transform=transform)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     generator = Generator(latent_dim)
@@ -85,7 +91,10 @@ def train_gan(epochs=50, batch_size=64, latent_dim=100):
 
         print(f"Epoch {epoch+1}/{epochs} - D Loss: {d_loss.item():.4f}, G Loss: {g_loss.item():.4f}")
 
-    torch.save(generator.state_dict(), "MnistGAN.pth")
+    # Save to project models directory
+    model_path = os.path.join(os.path.dirname(__file__), "MnistGAN.pth")
+    torch.save(generator.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
 
 # GUI interface functions
 def get_constraints():

@@ -1,4 +1,7 @@
+import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import re
 import tempfile
 import shutil
@@ -143,5 +146,7 @@ def get_valid_filename():
 filename = get_valid_filename()
 
 # === STEP 9: SAVE MODEL ===
-torch.save(model.state_dict(), filename)
-print(f"[+] Model saved as: {filename}")
+# Save to src/models directory
+model_path = os.path.join(os.path.dirname(__file__), filename)
+torch.save(model.state_dict(), model_path)
+print(f"[+] Model saved as: {model_path}")

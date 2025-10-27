@@ -1,10 +1,14 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import tkinter.simpledialog
 import importlib.util
-import os
 
-GAN_FOLDER = "."  # Current folder
+# Look for GAN files in src/models directory
+GAN_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models'))
 
 class GANApp:
     def is_valid_folder_name(self, name):

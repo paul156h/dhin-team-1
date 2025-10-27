@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
@@ -74,8 +78,10 @@ transform = transforms.Compose([
     transforms.Lambda(lambda x: x.view(-1))
 ])
 
+# Use project data directory
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
 mnistLoader = DataLoader(
-    datasets.MNIST(root="./data", train=True, transform=transform, download=True),
+    datasets.MNIST(root=DATA_DIR, train=True, transform=transform, download=True),
     batch_size=100,
     shuffle=True
 )

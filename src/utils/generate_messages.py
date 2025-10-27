@@ -1,15 +1,19 @@
+import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import json
-from ehr_gan import load_and_encode, load_model, generate_samples, make_adt, make_oru, make_ccd
+from models.ehr_gan import load_and_encode, load_model, generate_samples, make_adt, make_oru, make_ccd
 
 
 def main():
     base = os.path.dirname(__file__)
-    csv = os.path.join(base, 'mimic-demo-dataset.csv')
+    csv = os.path.abspath(os.path.join(base, '..', '..', 'data', 'datasets', 'mimic-demo-dataset.csv'))
     df, enc, X, inds = load_and_encode(csv)
-    model_path = os.path.join(base, 'models', 'simple_gan.pt')
+    # Model is now in src/models directory
+    model_path = os.path.abspath(os.path.join(base, '..', 'models', 'simple_gan.pt'))
     if not os.path.exists(model_path):
-        print('Model not found, run train_gan.py first')
+        print(f'Model not found at {model_path}')
+        print('Run train_gan.py first: python3 src/models/train_gan.py')
         return
     G, sizes, noise_dim = load_model(model_path, enc)
 
@@ -20,7 +24,8 @@ def main():
         conditions.append({'gender': 'F', 'age_range': '50-64'})
 
     samples = generate_samples(G, sizes, enc, n, conditions=conditions)
-    outdir = os.path.join(base, 'outputs')
+    # Output to project outputs directory
+    outdir = os.path.abspath(os.path.join(base, '..', '..', 'outputs'))
     os.makedirs(outdir, exist_ok=True)
     for i, p in enumerate(samples):
         pid = f"SYN-{i+1:04d}"
