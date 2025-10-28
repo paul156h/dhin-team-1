@@ -1,6 +1,9 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+# Add parent directories to path for module imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 import json
 from models.ehr_gan import load_and_encode, load_model, generate_samples, make_adt, make_oru, make_ccd
 

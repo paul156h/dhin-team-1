@@ -41,6 +41,7 @@ MANIFEST
 data/
 MNIST/
 datasets/
+outputs/
 
 # IDE
 .vscode/
