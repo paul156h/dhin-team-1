@@ -8,12 +8,35 @@ import json
 from models.ehr_gan import load_and_encode, load_model, generate_samples, make_adt, make_oru, make_ccd
 
 
+def get_bundled_dir():
+    """Get the directory where bundled files are located when running as PyInstaller exe."""
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as normal Python script
+        return os.path.dirname(__file__)
+
+
 def main():
-    base = os.path.dirname(__file__)
-    csv = os.path.abspath(os.path.join(base, '..', '..', 'data', 'datasets', 'mimic-demo-dataset.csv'))
+    base = get_bundled_dir()
+    
+    # Determine paths based on whether we're bundled or not
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller executable - data files are in _internal
+        csv = os.path.join(base, '_internal', 'data', 'datasets', 'mimic-demo-dataset.csv')
+        model_path = os.path.join(base, '_internal', 'models', 'simple_gan.pt')
+    else:
+        # Running as normal Python script
+        csv = os.path.abspath(os.path.join(base, '..', '..', 'data', 'datasets', 'mimic-demo-dataset.csv'))
+        model_path = os.path.abspath(os.path.join(base, '..', 'models', 'simple_gan.pt'))
+    
+    if not os.path.exists(csv):
+        print(f'CSV file not found at {csv}')
+        return
+    
     df, enc, X, inds = load_and_encode(csv)
     # Model is now in src/models directory
-    model_path = os.path.abspath(os.path.join(base, '..', 'models', 'simple_gan.pt'))
     if not os.path.exists(model_path):
         print(f'Model not found at {model_path}')
         print('Run train_gan.py first: python3 src/models/train_gan.py')
@@ -28,7 +51,12 @@ def main():
 
     samples = generate_samples(G, sizes, enc, n, conditions=conditions)
     # Output to project outputs directory
-    outdir = os.path.abspath(os.path.join(base, '..', '..', 'outputs'))
+    if getattr(sys, 'frozen', False):
+        # Running as executable - put outputs next to the exe
+        outdir = os.path.join(os.path.dirname(sys.executable), 'outputs')
+    else:
+        # Running as script
+        outdir = os.path.abspath(os.path.join(base, '..', '..', 'outputs'))
     os.makedirs(outdir, exist_ok=True)
     for i, p in enumerate(samples):
         pid = f"SYN-{i+1:04d}"
