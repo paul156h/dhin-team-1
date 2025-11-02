@@ -24,11 +24,11 @@ def main():
     # Determine paths based on whether we're bundled or not
     if getattr(sys, 'frozen', False):
         # Running as PyInstaller executable - data files are in _internal
-        csv = os.path.join(base, '_internal', 'data', 'datasets', 'mimic-demo-dataset.csv')
+        csv = os.path.join(base, '_internal', 'data', 'MIMIC', 'mimic-demo-dataset.csv')
         model_path = os.path.join(base, '_internal', 'models', 'simple_gan.pt')
     else:
         # Running as normal Python script
-        csv = os.path.abspath(os.path.join(base, '..', '..', 'data', 'datasets', 'mimic-demo-dataset.csv'))
+        csv = os.path.abspath(os.path.join(base, '..', '..', 'data', 'MIMIC', 'mimic-demo-dataset.csv'))
         model_path = os.path.abspath(os.path.join(base, '..', 'models', 'simple_gan.pt'))
     
     if not os.path.exists(csv):
