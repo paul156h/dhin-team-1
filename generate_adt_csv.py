@@ -2,23 +2,18 @@
 """
 Generate a synthetic CSV that matches a given schema (columns + order) and fills
 non-time fields using lookup tables. Time-related and name-like fields are left blank.
-
-Usage (Windows PowerShell example):
-  python .\generate_adt_csv.py --schema ".\mimic-iv-demo-dataset.csv" --out ".\generated_csvs\generated_data.csv" --rows 500
 """
 
 import argparse
 import random
+import re
 import string
 from pathlib import Path
 from typing import List
-
 import pandas as pd
 
-# -------------------------------
-# Lookup tables (variety, no cities/addresses)
-# -------------------------------
-SEX = ["M", "F", "O"]  # allow Other as well
+# Lookup tables (variety; no cities/addresses)
+SEX = ["M", "F", "O"]
 RACE_DESC = [
     "White",
     "Black or African American",
@@ -28,13 +23,9 @@ RACE_DESC = [
     "Some Other Race",
     "Two or More Races",
 ]
-# Ethnicity is typically 2-category (OMB). You can expand if your schema expects more detail.
 ETHNICITY = ["Not Hispanic or Latino", "Hispanic or Latino"]
 
-ADMISSION_TYPES = [
-    "EMERGENCY", "ELECTIVE", "URGENT", "NEWBORN",
-    "TRAUMA CENTER", "OBSERVATION"
-]
+ADMISSION_TYPES = ["EMERGENCY", "ELECTIVE", "URGENT", "NEWBORN", "TRAUMA CENTER", "OBSERVATION"]
 ADMISSION_LOCS = [
     "EMERGENCY ROOM", "PHYSICIAN REFERRAL", "CLINIC REFERRAL",
     "TRANSFER FROM HOSPITAL", "TRANSFER FROM SKILLED NURSING",
@@ -45,44 +36,24 @@ DISCHARGE_LOCS = [
     "REHAB", "LONG TERM CARE HOSPITAL", "AGAINST MEDICAL ADVICE",
     "TRANSFER TO ANOTHER HOSPITAL"
 ]
-INSURANCE = [
-    "Medicare", "Medicaid", "Private", "Self Pay", "Government",
-    "No Charge", "Other"
-]
+INSURANCE = ["Medicare", "Medicaid", "Private", "Self Pay", "Government", "No Charge", "Other"]
 LANG = ["ENGL", "SPAN", "MAND", "CANT", "VIET", "ARAB", "FREN", "RUSS", "KORE", "HIND", "PORT", "GERM"]
-RELIGION = [
-    "CATHOLIC", "PROTESTANT", "JEWISH", "BUDDHIST", "HINDU",
-    "MUSLIM", "CHRISTIAN", "ORTHODOX", "ATHEIST", "AGNOSTIC", "OTHER"
-]
+RELIGION = ["CATHOLIC", "PROTESTANT", "JEWISH", "BUDDHIST", "HINDU", "MUSLIM", "CHRISTIAN", "ORTHODOX", "ATHEIST", "AGNOSTIC", "OTHER"]
 MARITAL = ["MARRIED", "SINGLE", "DIVORCED", "WIDOWED", "SEPARATED", "PARTNERED", "UNKNOWN"]
 
-# A bigger diagnosis pool for variation
 ICD10_COMMON = [
-    ("R10.9", "Unspecified abdominal pain"),
-    ("J06.9", "Acute upper respiratory infection, unspecified"),
-    ("M54.5", "Low back pain"),
-    ("I10", "Essential (primary) hypertension"),
-    ("E11.9", "Type 2 diabetes mellitus without complications"),
-    ("R07.9", "Chest pain, unspecified"),
-    ("N39.0", "Urinary tract infection, site not specified"),
-    ("K52.9", "Noninfective gastroenteritis and colitis, unspecified"),
-    ("J45.909", "Unspecified asthma, uncomplicated"),
-    ("S09.90XA", "Unspecified injury of head, initial encounter"),
-    ("K21.9", "Gastro-esophageal reflux disease without esophagitis"),
-    ("R51.9", "Headache, unspecified"),
-    ("H10.9", "Unspecified conjunctivitis"),
-    ("L03.90", "Cellulitis, unspecified"),
-    ("A09", "Infectious gastroenteritis and colitis, unspecified"),
-    ("R50.9", "Fever, unspecified"),
-    ("R55", "Syncope and collapse"),
-    ("R42", "Dizziness and giddiness"),
-    ("J20.9", "Acute bronchitis, unspecified"),
-    ("S16.1XXA", "Strain of muscle, fascia and tendon at neck level"),
+    ("R10.9", "Unspecified abdominal pain"), ("J06.9", "Acute upper respiratory infection, unspecified"),
+    ("M54.5", "Low back pain"), ("I10", "Essential (primary) hypertension"),
+    ("E11.9", "Type 2 diabetes mellitus without complications"), ("R07.9", "Chest pain, unspecified"),
+    ("N39.0", "Urinary tract infection, site not specified"), ("K52.9", "Noninfective gastroenteritis and colitis, unspecified"),
+    ("J45.909", "Unspecified asthma, uncomplicated"), ("S09.90XA", "Unspecified injury of head, initial encounter"),
+    ("K21.9", "Gastro-esophageal reflux disease without esophagitis"), ("R51.9", "Headache, unspecified"),
+    ("H10.9", "Unspecified conjunctivitis"), ("L03.90", "Cellulitis, unspecified"),
+    ("A09", "Infectious gastroenteritis and colitis, unspecified"), ("R50.9", "Fever, unspecified"),
+    ("R55", "Syncope and collapse"), ("R42", "Dizziness and giddiness"),
+    ("J20.9", "Acute bronchitis, unspecified"), ("S16.1XXA", "Strain of muscle, fascia and tendon at neck level"),
 ]
 
-# -------------------------------
-# Column matching helpers
-# -------------------------------
 TIME_TOKENS = [
     "time", "date", "datetime", "admit", "disch", "edreg", "edout",
     "intime", "outtime", "charttime", "storetime", "starttime", "endtime",
@@ -95,15 +66,15 @@ def contains(col: str, *subs: str) -> bool:
     return any(s in c for s in subs)
 
 def should_blank_time(col: str) -> bool:
-    return contains(col, *TIME_TOKENS)
+    c = col.lower()
+    return any(tok in c for tok in TIME_TOKENS)
 
 def should_blank_name(col: str) -> bool:
-    return contains(col, *NAME_TOKENS)
+    c = col.lower()
+    return any(tok in c for tok in NAME_TOKENS)
 
-# -------------------------------
-# Generators
-# -------------------------------
 def rand_digits(n: int) -> str:
+    import string
     return "".join(random.choices(string.digits, k=n))
 
 def weighted_choice(items: List, weights: List[float] = None):
@@ -114,14 +85,11 @@ def weighted_choice(items: List, weights: List[float] = None):
 def generate_row(columns: List[str]) -> dict:
     subj_id = int(rand_digits(7))
     hadm_id = int(rand_digits(7))
-    # Leave ALL time fields blank, so we don't compute ages from dates.
-    age_years = random.randint(0, 95)  # Reasonable bounds, never negative
-    sex = weighted_choice(SEX, [0.49, 0.49, 0.02])  # mostly M/F, small O
-    race = weighted_choice(
-        RACE_DESC,
-        [0.61, 0.12, 0.06, 0.01, 0.01, 0.12, 0.07]  # example distribution
-    )
-    ethnicity = weighted_choice(ETHNICITY, [0.83, 0.17])  # approx US-wide; adjust as needed
+    age_years = random.randint(0, 95)  
+
+    sex = weighted_choice(SEX, [0.49, 0.49, 0.02])
+    race = weighted_choice(RACE_DESC, [0.61, 0.12, 0.06, 0.01, 0.01, 0.12, 0.07])
+    ethnicity = weighted_choice(ETHNICITY, [0.83, 0.17])
 
     dx_code, dx_desc = random.choice(ICD10_COMMON)
     admission_type = random.choice(ADMISSION_TYPES)
@@ -137,7 +105,7 @@ def generate_row(columns: List[str]) -> dict:
         c = col.lower()
         value = ""
 
-        # Always blank times and names
+        # Always blank time-related and name-like fields
         if should_blank_time(c) or should_blank_name(c):
             row[col] = ""
             continue
@@ -153,7 +121,7 @@ def generate_row(columns: List[str]) -> dict:
             value = sex
         elif contains(c, "race"):
             value = race
-        elif contains(c, "ethnic"):                 # <-- ethnicity fixed here
+        elif contains(c, "ethnicity", "ethnic", "hispanic"):  
             value = ethnicity
         elif contains(c, "age"):
             value = age_years
@@ -165,6 +133,10 @@ def generate_row(columns: List[str]) -> dict:
             value = admission_loc
         elif contains(c, "dischargelocation", "dischloc"):
             value = discharge_loc
+
+        # Admissions counts
+        elif contains(c, "recent admissions", "admissions_count", "num_admissions", "admissions"):
+            value = random.randint(0, 10)
 
         # Insurance / misc
         elif contains(c, "insurance", "payer"):
@@ -190,16 +162,13 @@ def generate_row(columns: List[str]) -> dict:
         elif contains(c, "versionid", "msh12"):
             value = "2.5.1"
 
-        # Otherwise leave blank (e.g., any address/phone fields that may exist)
+        # Otherwise leave blank
         row[col] = value
 
     return row
 
-# -------------------------------
-# Main
-# -------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Generate synthetic admissions CSV matching a schema (no times/names; ethnicity via lookup).")
+    parser = argparse.ArgumentParser(description="Generate synthetic admissions CSV matching a schema (times blank; ethnicity lookup).")
     parser.add_argument("--schema", type=Path, required=True, help="Path to schema CSV (to copy column names/order).")
     parser.add_argument("--out", type=Path, default=Path("generated_csvs/generated_data.csv"), help="Output CSV path.")
     parser.add_argument("--rows", type=int, default=200, help="Number of rows to generate.")
@@ -208,19 +177,15 @@ def main():
 
     random.seed(args.seed)
 
-    # Read only the header/first few lines to grab columns
     df_schema_sample = pd.read_csv(args.schema, nrows=5)
     columns = list(df_schema_sample.columns)
 
-    # Generate
     rows = [generate_row(columns) for _ in range(args.rows)]
     out_df = pd.DataFrame(rows, columns=columns)
 
-    # Ensure output directory exists
     args.out.parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(args.out, index=False)
 
-    # Coverage report
     filled = sum(out_df[c].astype(str).ne("").any() for c in columns)
     print(f"✅ Generated {args.rows} rows → {args.out}")
     print(f"Columns with data: {filled}/{len(columns)}")
