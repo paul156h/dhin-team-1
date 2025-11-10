@@ -1,5 +1,6 @@
 # Virtual Environment
 gan-env/
+.venv/
 venv/
 env/
 ENV/
