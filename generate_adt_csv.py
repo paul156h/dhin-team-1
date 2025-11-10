@@ -1,77 +1,132 @@
-import pandas as pd, random, string, uuid, re
-from datetime import datetime, timedelta
+#!/usr/bin/env python3
+"""
+Generate a synthetic CSV that matches a given schema (columns + order) and fills
+non-time fields using lookup tables. Time-related and name-like fields are left blank.
+
+Usage (Windows PowerShell example):
+  python .\generate_adt_csv.py --schema ".\mimic-iv-demo-dataset.csv" --out ".\generated_csvs\generated_data.csv" --rows 500
+"""
+
+import argparse
+import random
+import string
 from pathlib import Path
+from typing import List
 
-N_ROWS = 200  # <-- change this number to control how many lines get created
+import pandas as pd
 
-# Load your existing CSV to copy column names and order
-src_path = Path("mimic-iv-demo-dataset.csv")
-example_df = pd.read_csv(src_path, nrows=5)
-columns = list(example_df.columns)
-
-# Lookup tables
-# Proof of concept for now, this can be changed in the future
-SEX = ["M", "F"]
+# -------------------------------
+# Lookup tables (variety, no cities/addresses)
+# -------------------------------
+SEX = ["M", "F", "O"]  # allow Other as well
 RACE_DESC = [
-    "White", "Black or African American", "Asian",
-    "American Indian or Alaska Native", "Native Hawaiian or Other Pacific Islander", "Other",
+    "White",
+    "Black or African American",
+    "Asian",
+    "American Indian or Alaska Native",
+    "Native Hawaiian or Other Pacific Islander",
+    "Some Other Race",
+    "Two or More Races",
 ]
-ADMISSION_TYPES = ["EMERGENCY", "ELECTIVE", "URGENT", "NEWBORN"]
-ADMISSION_LOCS = ["EMERGENCY ROOM", "PHYSICIAN REFERRAL", "CLINIC REFERRAL", "TRANSFER FROM HOSPITAL", "WALK-IN"]
-DISCHARGE_LOCS = ["HOME", "HOME HEALTH CARE", "SKILLED NURSING FACILITY", "REHAB", "EXPIRED"]
-INSURANCE = ["Medicare", "Medicaid", "Private", "Self Pay"]
-LANG = ["ENGL", "SPAN", "MAND", "VIET", "ARAB"]
-RELIGION = ["CATHOLIC", "PROTESTANT QUAKER", "JEWISH", "BUDDHIST", "HINDU", "MUSLIM", "CHRISTIAN", "OTHER"]
-MARITAL = ["MARRIED", "SINGLE", "DIVORCED", "WIDOWED"]
-CITIES = [
-    ("Greensboro","NC","27401"), ("Raleigh","NC","27601"), ("Durham","NC","27701"),
-    ("Seattle","WA","98101"), ("Boston","MA","02108"), ("Atlanta","GA","30303"),
-    ("Austin","TX","78701"), ("New York","NY","10001"), ("Chicago","IL","60601"),
+# Ethnicity is typically 2-category (OMB). You can expand if your schema expects more detail.
+ETHNICITY = ["Not Hispanic or Latino", "Hispanic or Latino"]
+
+ADMISSION_TYPES = [
+    "EMERGENCY", "ELECTIVE", "URGENT", "NEWBORN",
+    "TRAUMA CENTER", "OBSERVATION"
 ]
-FAMILY_NAMES = ["DOE","SMITH","JOHNSON","BROWN","JONES","MILLER","DAVIS","GARCIA","RODRIGUEZ","WILSON"]
-GIVEN_NAMES  = ["JANE","JOHN","EMMA","OLIVIA","NOAH","LIAM","AVA","ISABELLA","MIA","ELIJAH"]
+ADMISSION_LOCS = [
+    "EMERGENCY ROOM", "PHYSICIAN REFERRAL", "CLINIC REFERRAL",
+    "TRANSFER FROM HOSPITAL", "TRANSFER FROM SKILLED NURSING",
+    "HMO REFERRAL", "WALK-IN", "AMBULANCE"
+]
+DISCHARGE_LOCS = [
+    "HOME", "HOME HEALTH CARE", "SKILLED NURSING FACILITY",
+    "REHAB", "LONG TERM CARE HOSPITAL", "AGAINST MEDICAL ADVICE",
+    "TRANSFER TO ANOTHER HOSPITAL"
+]
+INSURANCE = [
+    "Medicare", "Medicaid", "Private", "Self Pay", "Government",
+    "No Charge", "Other"
+]
+LANG = ["ENGL", "SPAN", "MAND", "CANT", "VIET", "ARAB", "FREN", "RUSS", "KORE", "HIND", "PORT", "GERM"]
+RELIGION = [
+    "CATHOLIC", "PROTESTANT", "JEWISH", "BUDDHIST", "HINDU",
+    "MUSLIM", "CHRISTIAN", "ORTHODOX", "ATHEIST", "AGNOSTIC", "OTHER"
+]
+MARITAL = ["MARRIED", "SINGLE", "DIVORCED", "WIDOWED", "SEPARATED", "PARTNERED", "UNKNOWN"]
+
+# A bigger diagnosis pool for variation
 ICD10_COMMON = [
-    ("R10.9", "Unspecified abdominal pain"), ("J06.9", "Acute upper respiratory infection, unspecified"),
-    ("M54.5", "Low back pain"), ("I10", "Essential (primary) hypertension"),
-    ("E11.9", "Type 2 diabetes mellitus without complications"), ("R07.9", "Chest pain, unspecified"),
+    ("R10.9", "Unspecified abdominal pain"),
+    ("J06.9", "Acute upper respiratory infection, unspecified"),
+    ("M54.5", "Low back pain"),
+    ("I10", "Essential (primary) hypertension"),
+    ("E11.9", "Type 2 diabetes mellitus without complications"),
+    ("R07.9", "Chest pain, unspecified"),
+    ("N39.0", "Urinary tract infection, site not specified"),
+    ("K52.9", "Noninfective gastroenteritis and colitis, unspecified"),
+    ("J45.909", "Unspecified asthma, uncomplicated"),
+    ("S09.90XA", "Unspecified injury of head, initial encounter"),
+    ("K21.9", "Gastro-esophageal reflux disease without esophagitis"),
+    ("R51.9", "Headache, unspecified"),
+    ("H10.9", "Unspecified conjunctivitis"),
+    ("L03.90", "Cellulitis, unspecified"),
+    ("A09", "Infectious gastroenteritis and colitis, unspecified"),
+    ("R50.9", "Fever, unspecified"),
+    ("R55", "Syncope and collapse"),
+    ("R42", "Dizziness and giddiness"),
+    ("J20.9", "Acute bronchitis, unspecified"),
+    ("S16.1XXA", "Strain of muscle, fascia and tendon at neck level"),
 ]
 
-# Helper functions
-def rand_digits(n): return "".join(random.choices(string.digits, k=n))
-def rand_phone(): return f"({rand_digits(3)}){rand_digits(3)}-{rand_digits(4)}"
-def rand_street():
-    return f"{random.randint(10,9999)} {random.choice(['MAIN ST','OAK AVE','PINE ST','ELM ST','MAPLE AVE','2ND ST'])}"
-def rand_datetime(start_year=2015, end_year=2025):
-    start, end = datetime(start_year,1,1), datetime(end_year,10,31)
-    return start + timedelta(seconds=random.randint(0, int((end-start).total_seconds())))
-def rand_dob(min_age=0, max_age=95):
-    today = datetime(2025, 11, 6)
-    age = random.randint(min_age, max_age)
-    birth = today - timedelta(days=age*365 + random.randint(0,364))
-    return birth
-def normalize(name): return re.sub(r'[^a-z0-9]+', '', name.lower())
+# -------------------------------
+# Column matching helpers
+# -------------------------------
+TIME_TOKENS = [
+    "time", "date", "datetime", "admit", "disch", "edreg", "edout",
+    "intime", "outtime", "charttime", "storetime", "starttime", "endtime",
+    "chartdate", "birth", "dob"
+]
+NAME_TOKENS = ["name", "first", "last", "given", "family", "middle"]
 
-# Row generator that fills known columns based on their names
-def make_row(columns):
+def contains(col: str, *subs: str) -> bool:
+    c = col.lower()
+    return any(s in c for s in subs)
+
+def should_blank_time(col: str) -> bool:
+    return contains(col, *TIME_TOKENS)
+
+def should_blank_name(col: str) -> bool:
+    return contains(col, *NAME_TOKENS)
+
+# -------------------------------
+# Generators
+# -------------------------------
+def rand_digits(n: int) -> str:
+    return "".join(random.choices(string.digits, k=n))
+
+def weighted_choice(items: List, weights: List[float] = None):
+    if weights is None:
+        return random.choice(items)
+    return random.choices(items, weights=weights, k=1)[0]
+
+def generate_row(columns: List[str]) -> dict:
     subj_id = int(rand_digits(7))
     hadm_id = int(rand_digits(7))
-    adm_time = rand_datetime()
-    disch_time = adm_time + timedelta(hours=random.randint(6, 240))
-    expire_flag = 1 if random.random() < 0.03 else 0
+    # Leave ALL time fields blank, so we don't compute ages from dates.
+    age_years = random.randint(0, 95)  # Reasonable bounds, never negative
+    sex = weighted_choice(SEX, [0.49, 0.49, 0.02])  # mostly M/F, small O
+    race = weighted_choice(
+        RACE_DESC,
+        [0.61, 0.12, 0.06, 0.01, 0.01, 0.12, 0.07]  # example distribution
+    )
+    ethnicity = weighted_choice(ETHNICITY, [0.83, 0.17])  # approx US-wide; adjust as needed
 
-    fam = random.choice(FAMILY_NAMES)
-    giv = random.choice(GIVEN_NAMES)
-    dob = rand_dob(0, 95)
-    age_years = int((adm_time.date() - dob.date()).days // 365)
-    race = random.choice(RACE_DESC)
-    sex = random.choice(SEX)
-    city, state, zipcode = random.choice(CITIES)
-    street = rand_street()
-    phone = rand_phone()
     dx_code, dx_desc = random.choice(ICD10_COMMON)
     admission_type = random.choice(ADMISSION_TYPES)
     admission_loc = random.choice(ADMISSION_LOCS)
-    discharge_loc = "EXPIRED" if expire_flag else random.choice([x for x in DISCHARGE_LOCS if x != "EXPIRED"])
+    discharge_loc = random.choice(DISCHARGE_LOCS)
     insurance = random.choice(INSURANCE)
     language = random.choice(LANG)
     religion = random.choice(RELIGION)
@@ -79,45 +134,101 @@ def make_row(columns):
 
     row = {}
     for col in columns:
-        key = normalize(col)
-        val = ""
+        c = col.lower()
+        value = ""
 
-        if key in ("subject_id","patientid","pid3"): val = subj_id
-        elif key in ("hadm_id","visitid","pv1visitnumber"): val = hadm_id
-        elif key in ("lastname","familyname"): val = fam.title()
-        elif key in ("firstname","givenname"): val = giv.title()
-        elif key in ("fullname","patientname"): val = f"{fam}^{giv}"
-        elif key in ("gender","sex"): val = sex
-        elif key in ("race","racedesc"): val = race
-        elif key in ("dob","birthdate"): val = dob.strftime("%Y-%m-%d")
-        elif key in ("age","ageyears"): val = age_years
-        elif key in ("street","address"): val = street.title()
-        elif key in ("city",): val = city
-        elif key in ("state",): val = state
-        elif key in ("zip","zipcode"): val = zipcode
-        elif key in ("phone",): val = phone
-        elif key in ("admittime","admissiontime"): val = adm_time.strftime("%Y-%m-%d %H:%M:%S")
-        elif key in ("dischtime","dischargetime"): val = disch_time.strftime("%Y-%m-%d %H:%M:%S")
-        elif key in ("admissiontype",): val = admission_type
-        elif key in ("admissionlocation",): val = admission_loc
-        elif key in ("dischargelocation",): val = discharge_loc
-        elif key in ("insurance",): val = insurance
-        elif key in ("language",): val = language
-        elif key in ("religion",): val = religion
-        elif key in ("maritalstatus",): val = marital
-        elif key in ("diagnosis","dxdesc"): val = dx_desc
-        elif key in ("dx","diagnosiscode"): val = dx_code
-        elif key in ("hospitalexpireflag","deathflag"): val = expire_flag
-        elif key in ("messagetype","msh9messagetype"): val = "ADT^A04"
-        elif key in ("processingid","msh11processingid"): val = "P"
-        elif key in ("versionid","msh12versionid"): val = "2.5.1"
+        # Always blank times and names
+        if should_blank_time(c) or should_blank_name(c):
+            row[col] = ""
+            continue
 
-        row[col] = val
+        # IDs
+        if contains(c, "subject_id", "subjectid", "patientid", "mrn", "pid3"):
+            value = subj_id
+        elif contains(c, "hadm_id", "hadmid", "visitid", "encounter", "pv1"):
+            value = hadm_id
+
+        # Demographics
+        elif contains(c, "gender", "sex", "administrativesex"):
+            value = sex
+        elif contains(c, "race"):
+            value = race
+        elif contains(c, "ethnic"):                 # <-- ethnicity fixed here
+            value = ethnicity
+        elif contains(c, "age"):
+            value = age_years
+
+        # Admission / Discharge metadata (non-time)
+        elif contains(c, "admissiontype", "patientclass"):
+            value = admission_type
+        elif contains(c, "admissionlocation", "admissionsource", "admitloc"):
+            value = admission_loc
+        elif contains(c, "dischargelocation", "dischloc"):
+            value = discharge_loc
+
+        # Insurance / misc
+        elif contains(c, "insurance", "payer"):
+            value = insurance
+        elif contains(c, "language", "lang"):
+            value = language
+        elif contains(c, "religion", "rel"):
+            value = religion
+        elif contains(c, "marital"):
+            value = marital
+
+        # Diagnosis
+        elif contains(c, "diagnosiscode", "dg1", "dx_code", "dxcode"):
+            value = dx_code
+        elif contains(c, "diagnosis", "dxdesc"):
+            value = dx_desc
+
+        # HL7-ish meta (non-time)
+        elif contains(c, "messagetype", "msh9"):
+            value = "ADT^A04"
+        elif contains(c, "processingid", "msh11"):
+            value = "P"
+        elif contains(c, "versionid", "msh12"):
+            value = "2.5.1"
+
+        # Otherwise leave blank (e.g., any address/phone fields that may exist)
+        row[col] = value
+
     return row
 
-# Generate all rows and save CSV
-rows = [make_row(columns) for _ in range(N_ROWS)]
-out_df = pd.DataFrame(rows, columns=columns)
-out_df.to_csv("./generated_csvs/generated_data.csv", index=False)
+# -------------------------------
+# Main
+# -------------------------------
+def main():
+    parser = argparse.ArgumentParser(description="Generate synthetic admissions CSV matching a schema (no times/names; ethnicity via lookup).")
+    parser.add_argument("--schema", type=Path, required=True, help="Path to schema CSV (to copy column names/order).")
+    parser.add_argument("--out", type=Path, default=Path("generated_csvs/generated_data.csv"), help="Output CSV path.")
+    parser.add_argument("--rows", type=int, default=200, help="Number of rows to generate.")
+    parser.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility.")
+    args = parser.parse_args()
 
-print(f"✅ Generated {N_ROWS} rows -> generated_csvs/generated_data.csv")
+    random.seed(args.seed)
+
+    # Read only the header/first few lines to grab columns
+    df_schema_sample = pd.read_csv(args.schema, nrows=5)
+    columns = list(df_schema_sample.columns)
+
+    # Generate
+    rows = [generate_row(columns) for _ in range(args.rows)]
+    out_df = pd.DataFrame(rows, columns=columns)
+
+    # Ensure output directory exists
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(args.out, index=False)
+
+    # Coverage report
+    filled = sum(out_df[c].astype(str).ne("").any() for c in columns)
+    print(f"✅ Generated {args.rows} rows → {args.out}")
+    print(f"Columns with data: {filled}/{len(columns)}")
+    still_blank = [c for c in columns if out_df[c].astype(str).eq("").all()]
+    if still_blank:
+        print("Columns left blank (by rule or no mapping found):")
+        for c in still_blank:
+            print(f"  - {c}")
+
+if __name__ == "__main__":
+    main()
