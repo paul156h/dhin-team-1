@@ -1,1 +1,0 @@
-MSH|^~\&|EHRGAN|EHRGANFac|LabSystem|LabSystemFac|20251020191352||ADT^A01|1761002032|P|2.3PID|1|SYN-0001||Synthetic^Patient||19700101|UOBR|1|||HemoglobinOBX|1|NM|Hemoglobin||13.2|g/dL|||||F

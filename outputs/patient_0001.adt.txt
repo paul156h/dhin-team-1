@@ -1,1 +1,0 @@
-MSH|^~\&|EHRGAN|EHRGANFac|EHRReceiver|EHRReceiverFac|20251020191352||ADT^A01|1761002032|P|2.3PID|1|SYN-0001||Synthetic^Patient||19700101|FPV1|1|I|WARD^123^1|||^^^||||||||||||||VN|||||||||||||||||||||
