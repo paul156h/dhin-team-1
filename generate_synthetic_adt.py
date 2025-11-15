@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """
-Generate a synthetic CSV that matches a given schema (columns + order) and fills
-non-time fields using lookup tables. Time-related and name-like fields are left blank.
+All-in-one synthetic ADT generator: produces both a CSV and HL7 v2.5.1 ADT messages
+from a single command. This combines generate_adt_csv.py and generate_adt_hl7.py.
+
+Usage:
+  python generate_synthetic_adt.py --schema schema_hl7_minimal.csv --rows 100 --seed 42 --csv-out generated.csv --hl7-out messages.hl7
 """
 
 import argparse
 import random
-import re
-import string
 import uuid
+import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
-import pandas as pd
+
 
 
 
 SEX = ["M", "F"]
-SEX_WEIGHTS = [0.487, 0.513]  # Delaware sex distribution
+SEX_WEIGHTS = [0.487, 0.513]
 
 RACE_DESC = [
     "White",
@@ -26,10 +28,10 @@ RACE_DESC = [
     "Two or More Races",
     "Other",
 ]
-RACE_WEIGHTS = [0.600, 0.224, 0.040, 0.029, 0.107]  # Delaware non-Hispanic race distribution
+RACE_WEIGHTS = [0.600, 0.224, 0.040, 0.029, 0.107]
 
 ETHNICITY = ["Not Hispanic or Latino", "Hispanic or Latino"]
-ETHNICITY_WEIGHTS = [0.909, 0.091]  # Delaware ethnicity distribution
+ETHNICITY_WEIGHTS = [0.909, 0.091]
 
 ADMISSION_TYPES = ["EMERGENCY", "ELECTIVE", "URGENT", "NEWBORN", "TRAUMA CENTER", "OBSERVATION"]
 ADMISSION_LOCS = [
@@ -60,14 +62,6 @@ ICD10_COMMON = [
     ("J20.9", "Acute bronchitis, unspecified"), ("S16.1XXA", "Strain of muscle, fascia and tendon at neck level"),
 ]
 
-TIME_TOKENS = [
-    "time", "date", "datetime", "admit", "disch", "edreg", "edout",
-    "intime", "outtime", "charttime", "storetime", "starttime", "endtime",
-    "chartdate", "birth", "dob"
-]
-NAME_TOKENS = ["name", "first", "last", "given", "family", "middle"]
-
-# Small synthetic lookups for names, zip codes, providers, services
 FIRST_NAMES = ["James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda", "William", "Elizabeth"]
 LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia", "Rodriguez", "Wilson"]
 DE_ZIPS = [19801, 19702, 19901, 19904, 19703, 19805, 19977]
@@ -79,7 +73,6 @@ PROVIDERS = [
 SERVICES = ["ED", "MED", "SURG", "OBS", "PEDS"]
 ASSIGNING_AUTHORITY = "DEMED"
 
-# Basic HL7 code mappings (approximate/placeholder CE values)
 RACE_CODE_MAP = {
     "White": "2106-3^White^HL70005",
     "Black or African American": "2054-5^Black or African American^HL70005",
@@ -93,31 +86,21 @@ ETHNICITY_CODE_MAP = {
 }
 LANG_MAP = {"ENGL": "eng^English", "SPAN": "spa^Spanish"}
 
+
 def contains(col: str, *subs: str) -> bool:
     c = col.lower()
     return any(s in c for s in subs)
 
-def should_blank_time(col: str) -> bool:
-    # Previously this tool left time fields blank on purpose; for ADT generation we
-    # now populate time fields. Keep the function for compatibility but always
-    # return False so times are filled.
-    return False
 
-def should_blank_name(col: str) -> bool:
-    # Allow name-like fields to be populated for HL7 PID segments.
-    return False
-
-
-def generate_name(seed=None):
+def generate_name():
     first = random.choice(FIRST_NAMES)
     last = random.choice(LAST_NAMES)
     return first, last
 
+
 def generate_dob_from_age(age_years: int):
-    # Derive a DOB from age with small jitter in days
     today = datetime.utcnow().date()
     years = age_years
-    # jitter +/- 2 years in days
     jitter_days = random.randint(-365 * 2, 365 * 2)
     try:
         dob = datetime(today.year - years, random.randint(1, 12), random.randint(1, 28)).date()
@@ -126,16 +109,14 @@ def generate_dob_from_age(age_years: int):
     dob = dob + timedelta(days=jitter_days)
     return dob
 
-def rand_datetime_between(start: datetime, end: datetime):
-    span = end - start
-    sec = random.randint(0, int(span.total_seconds()))
-    return start + timedelta(seconds=sec)
 
 def message_control_id():
     return uuid.uuid4().hex
 
+
 def gen_phone():
     return f"302-555-{random.randint(1000,9999):04d}"
+
 
 def gen_address():
     street_no = random.randint(100, 9999)
@@ -145,34 +126,32 @@ def gen_address():
     zipc = random.choice(DE_ZIPS)
     return f"{street}^{city}^{state}^{zipc}"
 
+
 def rand_digits(n: int) -> str:
-    import string
-    return "".join(random.choices(string.digits, k=n))
+    return "".join(random.choices("0123456789", k=n))
+
 
 def weighted_choice(items: List, weights: List[float] = None):
     if weights is None:
         return random.choice(items)
     return random.choices(items, weights=weights, k=1)[0]
 
+
 def generate_row(columns: List[str]) -> dict:
     subj_id = int(rand_digits(7))
     hadm_id = int(rand_digits(7))
     
-    # Delaware age distribution (2020 Census)
-    # Weighted by actual age ranges from Delaware demographics
     age_bins = [
-        (0, 17, 0.20),      # Under 18: 20%
-        (18, 34, 0.22),     # 18-34: 22%
-        (35, 49, 0.21),     # 35-49: 21%
-        (50, 64, 0.20),     # 50-64: 20%
-        (65, 79, 0.12),     # 65-79: 12%
-        (80, 100, 0.05)     
+        (0, 17, 0.20),
+        (18, 34, 0.22),
+        (35, 49, 0.21),
+        (50, 64, 0.20),
+        (65, 79, 0.12),
+        (80, 100, 0.05)
     ]
-    # Choose age bin based on Delaware distribution
     age_bin_choice = weighted_choice(age_bins, [b[2] for b in age_bins])
     age_years = random.randint(age_bin_choice[0], age_bin_choice[1])
 
-    # Use Delaware census weights
     sex = weighted_choice(SEX, SEX_WEIGHTS)
     race = weighted_choice(RACE_DESC, RACE_WEIGHTS)
     ethnicity = weighted_choice(ETHNICITY, ETHNICITY_WEIGHTS)
@@ -186,26 +165,19 @@ def generate_row(columns: List[str]) -> dict:
     religion = random.choice(RELIGION)
     marital = random.choice(MARITAL)
 
-
-    # Compose synthetic name/dob/provider/timestamps for mapping into HL7-like columns
     first_name, last_name = generate_name()
     dob = generate_dob_from_age(age_years)
     now = datetime.utcnow()
     msg_dt = now
     evn_dt = now
 
-    # Admission/admit times: choose admit sometime in the recent past
     admit_offset_days = random.randint(0, 30)
     admittime = now - timedelta(days=admit_offset_days, hours=random.randint(0, 72))
-    # Discharge time: for inpatient assume short stay, otherwise blank for register
     if admission_type in ("EMERGENCY", "TRAUMA CENTER", "OBSERVATION"):
-        # ED/observation — short stay
         dischtime = admittime + timedelta(hours=random.randint(1, 48))
     else:
-        # elective/urgent/newborn — may have longer stay
         dischtime = admittime + timedelta(days=random.randint(0, 7), hours=random.randint(0, 23))
 
-    # pick a provider
     prov_id, prov_last, prov_first = random.choice(PROVIDERS)
 
     row = {}
@@ -213,7 +185,6 @@ def generate_row(columns: List[str]) -> dict:
         c = col.lower()
         value = ""
 
-        # IDs and HL7-styled identifier fields
         if contains(c, "msh-3") or contains(c, "sendingapplication") or contains(c, "sending_app"):
             value = "SYNTH_APP"
         elif contains(c, "msh-4") or contains(c, "sendingfacility"):
@@ -233,20 +204,16 @@ def generate_row(columns: List[str]) -> dict:
         elif contains(c, "msh-12") or contains(c, "versionid"):
             value = "2.5.1"
 
-        # EVN
         elif contains(c, "evn-1") or contains(c, "eventtype"):
             value = "A04"
         elif contains(c, "evn-2") or contains(c, "eventdatetime"):
             value = evn_dt.strftime("%Y%m%d%H%M%S")
 
-        # IDs
         elif contains(c, "subject_id", "subjectid", "patientid", "mrn", "pid3"):
-            # Format as a full PID-3 value: id^^^AssigningAuthority^MR
             value = f"{subj_id}^^^{ASSIGNING_AUTHORITY}^MR"
         elif contains(c, "hadm_id", "hadmid", "visitid", "encounter", "pv1"):
             value = hadm_id
 
-        # Patient demographics
         elif contains(c, "gender", "sex", "administrativesex"):
             value = sex
         elif contains(c, "race"):
@@ -258,59 +225,46 @@ def generate_row(columns: List[str]) -> dict:
         elif contains(c, "dob") or contains(c, "birth") or contains(c, "pid-7"):
             value = dob.strftime("%Y%m%d")
 
-        # Name fields
         elif contains(c, "patientname") or contains(c, "pid-5") or contains(c, "name") or contains(c, "given"):
-            # HL7 XPN-like: Family^Given
             value = f"{last_name}^{first_name}"
         elif contains(c, "family") or contains(c, "lastname") or contains(c, "surname"):
             value = last_name
         elif contains(c, "first") or contains(c, "givenname"):
             value = first_name
 
-        # Address / phone
         elif contains(c, "address") or contains(c, "pid-11"):
             value = gen_address()
         elif contains(c, "phone") or contains(c, "pid-13"):
             value = gen_phone()
 
-        # Admission / Discharge metadata
         elif contains(c, "admissiontype", "patientclass") or contains(c, "pv1-2"):
-            # For register (A04) patient class is Outpatient
             value = "O"
         elif contains(c, "admissionlocation", "admissionsource", "admitloc") or contains(c, "pv1-14"):
             value = admission_loc
         elif contains(c, "dischargelocation", "dischloc") or contains(c, "pv1-36"):
             value = discharge_loc
         elif contains(c, "pv1-3") or contains(c, "assignedlocation"):
-            # Facility^Building^Room-Bed
             value = f"SYNTH_FAC^WARD1^{random.randint(100,499)}-{random.randint(1,4)}"
 
-        # Providers
         elif contains(c, "attending") or contains(c, "pv1-7"):
             value = f"{prov_id}^{prov_last}^{prov_first}^Dr^NPI"
         elif contains(c, "referring") or contains(c, "pv1-8"):
-            # pick another provider
             pid2, plast2, pfirst2 = random.choice(PROVIDERS)
             value = f"{pid2}^{plast2}^{pfirst2}^Dr^NPI"
         elif contains(c, "pv1-10") or contains(c, "hospitalservice"):
             value = random.choice(SERVICES)
 
-        # PV1 admit/discharge datetimes
         elif contains(c, "pv1-44") or contains(c, "admittime"):
             value = admittime.strftime("%Y%m%d%H%M%S")
         elif contains(c, "pv1-45") or contains(c, "dischtime") or contains(c, "dischargedatetime"):
             value = dischtime.strftime("%Y%m%d%H%M%S")
 
-        # Diagnosis
         elif contains(c, "diagnosiscode", "dg1", "dx_code", "dxcode"):
-            # DG1-3 CE style
             value = f"{dx_code}^{dx_desc}^ICD-10"
         elif contains(c, "diagnosis", "dxdesc"):
             value = dx_desc
 
-        # Insurance / IN1
         elif contains(c, "insurance", "payer") or contains(c, "in1"):
-            # Build a small IN1-style string: PlanID^PlanName^PolicyNumber
             policy = rand_digits(9)
             value = f"{insurance}Plan^{insurance}^{policy}"
         elif contains(c, "language", "lang"):
@@ -320,13 +274,10 @@ def generate_row(columns: List[str]) -> dict:
         elif contains(c, "marital"):
             value = marital
 
-        # NK1 (next-of-kin) basic fields
         elif contains(c, "nk1") or contains(c, "nextofkin"):
-            # Simple NK1 name/relationship/phone
             nk_first, nk_last = generate_name()
             value = f"{nk_last}^{nk_first}^SPO^{gen_phone()}"
 
-        # HL7-ish meta (non-time) defaults
         elif contains(c, "messagetype", "msh9"):
             value = "ADT^A04"
         elif contains(c, "processingid", "msh11"):
@@ -334,50 +285,187 @@ def generate_row(columns: List[str]) -> dict:
         elif contains(c, "versionid", "msh12"):
             value = "2.5.1"
 
-        # Fallbacks: existing simple mappings from previous script
-        elif contains(c, "gender", "sex"):
-            value = sex
-        elif contains(c, "race"):
-            value = race
-        elif contains(c, "ethnicity"):
-            value = ethnicity
-
-        # Admissions counts
         elif contains(c, "recent admissions", "admissions_count", "num_admissions", "admissions"):
             value = random.randint(0, 10)
 
-        # Otherwise leave blank
         row[col] = value
 
     return row
 
+
+def generate_csv(schema_path: Path, num_rows: int) -> pd.DataFrame:
+    """Generate synthetic patient CSV data."""
+    df_schema = pd.read_csv(schema_path, nrows=1)
+    columns = list(df_schema.columns)
+    rows = [generate_row(columns) for _ in range(num_rows)]
+    return pd.DataFrame(rows, columns=columns)
+
+
+#  HL7 Conversion (from generate_adt_hl7.py
+
+def fmt_ts(val):
+    if pd.isna(val) or val == "":
+        return ""
+    s = str(val)
+    if s.isdigit() and len(s) >= 8:
+        return s[:14].ljust(14, '0')
+    for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y%m%d"):
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt.strftime("%Y%m%d%H%M%S")
+        except Exception:
+            continue
+    return s
+
+
+def make_msh(row):
+    field_sep = '|'
+    enc = '^~\\&'
+    sending_app = row.get('msh-3') or row.get('sendingapplication') or 'SYNTH_APP'
+    sending_fac = row.get('msh-4') or row.get('sendingfacility') or 'SYNTH_FAC'
+    recv_app = row.get('msh-5') or row.get('receivingapplication') or 'REC_APP'
+    recv_fac = row.get('msh-6') or row.get('receivingfacility') or 'REC_FAC'
+    ts = fmt_ts(row.get('msh-7')) or datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    msg_type = row.get('msh-9') or 'ADT^A04'
+    ctrl = row.get('msh-10') or uuid.uuid4().hex
+    proc = row.get('msh-11') or 'P'
+    ver = row.get('msh-12') or '2.5.1'
+    parts = ["MSH", field_sep + enc, sending_app, sending_fac, recv_app, recv_fac, ts, '', msg_type, ctrl, proc, ver]
+    return field_sep.join(parts)
+
+
+def make_evn(row):
+    evn1 = row.get('evn-1') or row.get('eventtype') or 'A04'
+    evn2 = fmt_ts(row.get('evn-2')) or datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    return f"EVN|{evn1}|{evn2}"
+
+
+def make_pid(row):
+    pid3 = row.get('subject_id') or row.get('pid-3') or ''
+    name = row.get('pid-5') or row.get('patientname') or ''
+    dob = fmt_ts(row.get('pid-7') or row.get('dob') or row.get('birth') or '')
+    sex = row.get('gender') or row.get('sex') or ''
+    race = row.get('race') or ''
+    addr = row.get('pid-11') or row.get('address') or ''
+    phone = row.get('pid-13') or row.get('phone') or ''
+    ethnic = row.get('ethnicity') or row.get('pid-22') or ''
+    parts = ["PID", "1", "", pid3, "", name, dob, sex, race, "", addr, phone, "", "", "", "", "", "", ethnic]
+    return '|'.join(parts)
+
+
+def make_pv1(row):
+    pclass = row.get('pv1-2') or row.get('patientclass') or row.get('admissiontype') or 'O'
+    assigned = row.get('pv1-3') or row.get('assignedlocation') or ''
+    attending = row.get('pv1-7') or row.get('attending') or ''
+    service = row.get('pv1-10') or row.get('hospitalservice') or ''
+    visitnum = str(row.get('pv1-19') or row.get('hadm_id') or '')
+    admit = fmt_ts(row.get('pv1-44') or row.get('admittime') or '')
+    disc = fmt_ts(row.get('pv1-45') or row.get('dischtime') or row.get('dischargedatetime') or '')
+    parts = ["PV1", "1", str(pclass), str(assigned), "", "", str(attending), "", "", str(service), "", "", "", "", "", "", "", "", "", visitnum, "", "", "", "", "", "", "", "", "", "", "", "", "", admit, disc]
+    return '|'.join(parts)
+
+
+def make_dg1(row):
+    code = row.get('diagnosiscode') or row.get('dg1') or ''
+    desc = row.get('diagnosis') or row.get('dxdesc') or ''
+    if not code:
+        return ''
+    if '^' in code:
+        ce = code
+    else:
+        ce = f"{code}^{desc}^ICD-10"
+    return f"DG1|1||{ce}||"
+
+
+def make_in1(row):
+    in1 = row.get('in1') or row.get('insurance') or ''
+    if not in1:
+        return ''
+    return f"IN1|1|{in1}"
+
+
+def make_nk1(row):
+    nk = row.get('nk1') or row.get('nextofkin') or ''
+    if not nk:
+        return ''
+    return f"NK1|1|{nk}"
+
+
+def row_to_message(row):
+    r = {k: (v if pd.notna(v) else '') for k, v in row.items()}
+    segs = []
+    segs.append(make_msh(r))
+    segs.append(make_evn(r))
+    segs.append(make_pid(r))
+    pv1 = make_pv1(r)
+    if pv1:
+        segs.append(pv1)
+    dg1 = make_dg1(r)
+    if dg1:
+        segs.append(dg1)
+    in1 = make_in1(r)
+    if in1:
+        segs.append(in1)
+    nk1 = make_nk1(r)
+    if nk1:
+        segs.append(nk1)
+    msg = '\r'.join(segs) + '\r'
+    return msg
+
+
+def df_to_hl7_messages(df: pd.DataFrame) -> List[str]:
+    """Convert DataFrame rows to HL7 messages."""
+    messages = []
+    for _, row in df.iterrows():
+        messages.append(row_to_message(row))
+    return messages
+
+
+
+#  Combined entry point
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Generate synthetic admissions CSV matching a schema (times blank; ethnicity lookup).")
-    parser.add_argument("--schema", type=Path, required=True, help="Path to schema CSV (to copy column names/order).")
-    parser.add_argument("--out", type=Path, default=Path("generated_csvs/generated_data.csv"), help="Output CSV path.")
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic Delaware ADT data: both CSV and HL7 v2.5.1 messages in one command.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python generate_synthetic_adt.py --schema schema_hl7_minimal.csv --rows 100
+  python generate_synthetic_adt.py --schema schema_hl7_minimal.csv --rows 100 --seed 42 --csv-out data.csv --hl7-out messages.hl7
+        """
+    )
+    parser.add_argument("--schema", type=Path, required=True, help="Schema CSV (columns/order template).")
     parser.add_argument("--rows", type=int, default=200, help="Number of rows to generate.")
     parser.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility.")
+    parser.add_argument("--csv-out", type=Path, default=Path("generated_adt.csv"), help="Output CSV file path.")
+    parser.add_argument("--hl7-out", type=Path, default=Path("generated_adt_messages.hl7"), help="Output HL7 file path.")
     args = parser.parse_args()
 
     random.seed(args.seed)
 
-    df_schema_sample = pd.read_csv(args.schema, nrows=5)
-    columns = list(df_schema_sample.columns)
+    # Step 1: Generate CSV
+    print(f"🔄 Generating {args.rows} rows from schema {args.schema}...")
+    df = generate_csv(args.schema, args.rows)
+    args.csv_out.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(args.csv_out, index=False)
+    print(f"✅ CSV generated → {args.csv_out}")
 
-    rows = [generate_row(columns) for _ in range(args.rows)]
-    out_df = pd.DataFrame(rows, columns=columns)
+    # Step 2: Convert to HL7
+    print(f"🔄 Converting CSV to HL7 v2.5.1 ADT messages...")
+    messages = df_to_hl7_messages(df)
+    args.hl7_out.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.hl7_out, 'w', encoding='utf-8', newline='') as f:
+        for msg in messages:
+            f.write(msg)
+            f.write('\n')
+    print(f"✅ HL7 messages generated → {args.hl7_out}")
+    print(f"\n📊 Summary:")
+    print(f"   - Rows:    {len(df)}")
+    print(f"   - Columns: {len(df.columns)}")
+    print(f"   - Columns with data: {sum(df[c].astype(str).ne('').any() for c in df.columns)}/{len(df.columns)}")
+    print(f"   - Messages: {len(messages)}")
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    out_df.to_csv(args.out, index=False)
 
-    filled = sum(out_df[c].astype(str).ne("").any() for c in columns)
-    print(f"✅ Generated {args.rows} rows → {args.out}")
-    print(f"Columns with data: {filled}/{len(columns)}")
-    still_blank = [c for c in columns if out_df[c].astype(str).eq("").all()]
-    if still_blank:
-        print("Columns left blank (by rule or no mapping found):")
-        for c in still_blank:
-            print(f"  - {c}")
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

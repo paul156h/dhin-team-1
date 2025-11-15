@@ -1,0 +1,6 @@
+subject_id,gender,age,race,ethnicity,admission_type,discharge_location,insurance
+6022768^^^DEMED^MR,M,58,2106-3^White^HL70005,2186-5^Not Hispanic or Latino^HL70189,,,PrivatePlan^Private^419026831
+679883^^^DEMED^MR,F,5,2106-3^White^HL70005,2186-5^Not Hispanic or Latino^HL70189,,,PrivatePlan^Private^248611757
+4539147^^^DEMED^MR,F,39,2028-9^Asian^HL70005,2186-5^Not Hispanic or Latino^HL70189,,,No ChargePlan^No Charge^516851319
+9954139^^^DEMED^MR,F,97,2106-3^White^HL70005,2186-5^Not Hispanic or Latino^HL70189,,,OtherPlan^Other^123522062
+9802621^^^DEMED^MR,M,41,2028-9^Asian^HL70005,2186-5^Not Hispanic or Latino^HL70189,,,PrivatePlan^Private^808806500
