@@ -36,29 +36,39 @@ DELAWARE_CONSENSUS = {
     }
 }
 
-# PID segment field indices (0-based after split by |)
-# PID|1|ID|ALT-ID|NAME||DOB|Gender|...
-# 0   1  2  3      4   5 6   7      8
-PID_GENDER_IDX = 7
-PID_DOB_IDX = 6
-PID_RACE_IDX = 10
-PID_ETHNICITY_IDX = 22
+# Known race values to look for
+RACE_VALUES = {'White', 'Black', 'Asian', 'Hispanic', 'American Indian', 'Pacific Islander', 'Other', 'Two or More'}
+
+# Known ethnicity values to look for
+ETHNICITY_VALUES = {'Hispanic or Latino', 'Not Hispanic or Latino'}
 
 
 def parse_pid_line(pid_line):
-    """Extract demographic fields from PID segment."""
+    """Extract demographic fields from PID segment by looking for known values."""
     fields = pid_line.strip().split('|')
     
-    gender = fields[PID_GENDER_IDX] if len(fields) > PID_GENDER_IDX else ''
-    dob = fields[PID_DOB_IDX] if len(fields) > PID_DOB_IDX else ''
-    race = fields[PID_RACE_IDX] if len(fields) > PID_RACE_IDX else ''
-    ethnicity = fields[PID_ETHNICITY_IDX] if len(fields) > PID_ETHNICITY_IDX else ''
+    # Extract by known positions for gender and DOB (these are standard)
+    gender = fields[7].strip() if len(fields) > 7 else ''
+    dob = fields[6].strip() if len(fields) > 6 else ''
+    
+    # Search for race and ethnicity by matching known values
+    race = 'Unknown'
+    ethnicity = 'Unknown'
+    
+    for field in fields:
+        field_clean = field.strip()
+        # Check for race
+        if field_clean in RACE_VALUES:
+            race = field_clean
+        # Check for ethnicity
+        if field_clean in ETHNICITY_VALUES:
+            ethnicity = field_clean
     
     return {
-        'gender': gender.strip() or 'Unknown',
-        'dob': dob.strip(),
-        'race': race.strip() or 'Unknown',
-        'ethnicity': ethnicity.strip() or 'Unknown'
+        'gender': gender or 'Unknown',
+        'dob': dob,
+        'race': race,
+        'ethnicity': ethnicity
     }
 
 
@@ -147,6 +157,12 @@ def main():
     ethnicity_pcts = calculate_percentages(ethnicities)
     age_pcts = calculate_percentages(age_groups)
     
+    # Calculate similarity scores
+    gender_match = similarity_score(gender_pcts, DELAWARE_CONSENSUS['gender'])
+    race_match = similarity_score(race_pcts, DELAWARE_CONSENSUS['race'])
+    ethnicity_match = similarity_score(ethnicity_pcts, DELAWARE_CONSENSUS['ethnicity'])
+    age_match = similarity_score(age_pcts, DELAWARE_CONSENSUS['age_group'])
+    
     # Generate report
     output_file = output_dir / "adt_delaware_comparison.txt"
     
@@ -155,8 +171,22 @@ def main():
         f.write("ADT MESSAGE DEMOGRAPHICS vs DELAWARE CENSUS\n")
         f.write("=" * 70 + "\n\n")
         
+        # Summary Section
+        f.write("SUMMARY\n")
+        f.write("-" * 70 + "\n")
         f.write(f"Total ADT Messages Analyzed: {len(adt_files)}\n")
         f.write(f"Total Patients: {len(genders)}\n\n")
+        
+        f.write("Similarity to Delaware Census (±5% threshold):\n")
+        f.write(f"  Gender      : {'MATCH ✓' if gender_match else 'NO MATCH ✗'}\n")
+        f.write(f"  Race        : {'MATCH ✓' if race_match else 'NO MATCH ✗'}\n")
+        f.write(f"  Ethnicity   : {'MATCH ✓' if ethnicity_match else 'NO MATCH ✗'}\n")
+        f.write(f"  Age Group   : {'MATCH ✓' if age_match else 'NO MATCH ✗'}\n\n")
+        
+        matches = sum([gender_match, race_match, ethnicity_match, age_match])
+        f.write(f"Overall: {matches}/4 demographic categories match Delaware consensus\n\n")
+        
+        f.write("=" * 70 + "\n\n")
         
         # Gender Comparison
         f.write("GENDER DISTRIBUTION\n")
@@ -169,7 +199,30 @@ def main():
             f.write(f"  {gender:20s}: {pct:6.1f}%\n")
         similar = similarity_score(gender_pcts, DELAWARE_CONSENSUS['gender'])
         f.write(f"\nWithin ±5% threshold: {'YES ✓' if similar else 'NO ✗'}\n\n")
-    
+        
+        # Race Comparison
+        f.write("RACE DISTRIBUTION\n")
+        f.write("-" * 70 + "\n")
+        f.write("ADT Percentages:\n")
+        for race, pct in sorted(race_pcts.items(), key=lambda x: -x[1]):
+            f.write(f"  {race:20s}: {pct:6.1f}%\n")
+        f.write("\nDelaware Consensus:\n")
+        for race, pct in sorted(DELAWARE_CONSENSUS['race'].items(), key=lambda x: -x[1]):
+            f.write(f"  {race:20s}: {pct:6.1f}%\n")
+        similar = similarity_score(race_pcts, DELAWARE_CONSENSUS['race'])
+        f.write(f"\nWithin ±5% threshold: {'YES ✓' if similar else 'NO ✗'}\n\n")
+        
+        # Ethnicity Comparison
+        f.write("ETHNICITY DISTRIBUTION\n")
+        f.write("-" * 70 + "\n")
+        f.write("ADT Percentages:\n")
+        for eth, pct in sorted(ethnicity_pcts.items(), key=lambda x: -x[1]):
+            f.write(f"  {eth:30s}: {pct:6.1f}%\n")
+        f.write("\nDelaware Consensus:\n")
+        for eth, pct in sorted(DELAWARE_CONSENSUS['ethnicity'].items(), key=lambda x: -x[1]):
+            f.write(f"  {eth:30s}: {pct:6.1f}%\n")
+        similar = similarity_score(ethnicity_pcts, DELAWARE_CONSENSUS['ethnicity'])
+        f.write(f"\nWithin ±5% threshold: {'YES ✓' if similar else 'NO ✗'}\n\n")
         
         # Age Group Comparison
         f.write("AGE GROUP DISTRIBUTION\n")
