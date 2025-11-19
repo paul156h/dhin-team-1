@@ -227,61 +227,61 @@ class ADTEvaluator:
         avg_standard = sum(r.standard_segments_present for r in results) / len(results)
         avg_field_completeness = sum(r.field_completeness for r in results) / len(results)
         
-        report.append("SUMMARY STATISTICS")
+        # Quality tier
+        if avg_similarity >= 80:
+            quality_tier = "EXCELLENT ✓"
+        elif avg_similarity >= 70:
+            quality_tier = "GOOD"
+        elif avg_similarity >= 60:
+            quality_tier = "FAIR"
+        else:
+            quality_tier = "NEEDS IMPROVEMENT"
+        
+        report.append("SUMMARY")
         report.append("-" * 80)
-        report.append(f"Total messages evaluated: {len(results)}")
-        report.append(f"Average overall similarity: {avg_similarity:.2f}%")
-        report.append(f"Average required segments present: {avg_required:.2f}%")
-        report.append(f"Average standard segments present: {avg_standard:.2f}%")
-        report.append(f"Average field completeness: {avg_field_completeness:.2f}%")
+        report.append(f"Messages Evaluated:  {len(results)}")
+        report.append(f"Average Quality:     {avg_similarity:.1f}%  ({quality_tier})")
         report.append("")
         
         # Detailed results
         report.append("DETAILED RESULTS")
         report.append("-" * 80)
         
-        for result in results:
-            report.append(f"\nFile: {result.filename}")
-            report.append(f"  Overall Similarity: {result.overall_similarity:.2f}%")
-            report.append(f"  Total Segments: {result.total_segments}")
-            report.append(f"  Unique Segment Types: {result.unique_segment_types}/{len(STANDARD_SEGMENTS)}")
-            report.append(f"  Required Segments Present: {result.required_segments_present:.2f}%")
-            report.append(f"  Standard Segments Present: {result.standard_segments_present:.2f}%")
-            report.append(f"  Field Completeness: {result.field_completeness:.2f}%")
+        for idx, result in enumerate(results, 1):
+            # Quality indicator
+            if result.overall_similarity >= 80:
+                quality_icon = "✓"
+            elif result.overall_similarity >= 70:
+                quality_icon = "○"
+            else:
+                quality_icon = "!"
+            
+            report.append(f"\n[{idx:2d}] {result.filename}")
+            report.append(f"    Quality: {result.overall_similarity:.1f}% {quality_icon}")
+            report.append(f"    Segments: {result.unique_segment_types}/14 types, {result.total_segments} total")
+            report.append(f"    Field Data: {result.field_completeness:.1f}%")
             
             if result.missing_segments:
-                report.append(f"  [WARNING] Missing required segments: {', '.join(result.missing_segments)}")
+                missing = ', '.join(result.missing_segments)
+                report.append(f"    ⚠ Missing Required: {missing}")
             
-            # Segment-level details
-            report.append("  Segment Details:")
-            for seg_type, details in result.segment_details.items():
-                if details['present']:
-                    report.append(f"    {seg_type:4} ({STANDARD_SEGMENTS[seg_type]:30}): "
-                                f"Count={details['count']}, Fields populated={details['populated_fields']}/{details['expected_fields']}, "
-                                f"Completeness={details['completeness']:.1f}%")
-                else:
-                    report.append(f"    {seg_type:4} ({STANDARD_SEGMENTS[seg_type]:30}): NOT PRESENT")
+            # Compact segment summary - only show present segments
+            present_segs = [seg for seg, det in result.segment_details.items() if det['present']]
+            if present_segs:
+                seg_list = ", ".join(f"{s}({result.segment_details[s]['count']})" for s in present_segs)
+                report.append(f"    Present: {seg_list}")
         
-        report.append("\n" + "=" * 80)
-        report.append("EVALUATION METRICS EXPLANATION")
-        report.append("=" * 80)
-        report.append("""
-Overall Similarity Score:
-- Weighted average of three metrics:
-  * Required Segments Present (40% weight): MSH, EVN, PID, PV1
-  * Standard Segments Present (30% weight): All standard HL7 ADT segments
-  * Field Completeness (30% weight): Percentage of fields with actual data
-
-Segment Presence:
-- Required segments ensure minimum valid ADT structure
-- Standard segments check compliance with full ADT specification
-
-Field Completeness:
-- Percentage of non-empty fields in present segments
-- Higher values indicate more detailed patient information
-
-A score above 70% generally indicates good quality ADT messages.
-""")
+        report.append("")
+        report.append("SCORING GUIDE")
+        report.append("-" * 80)
+        report.append("Quality Score = Required (40%) + Standard (30%) + Completeness (30%)")
+        report.append("")
+        report.append("Quality Tiers:")
+        report.append("  ✓ EXCELLENT (80-100%)  - Production ready, comprehensive data")
+        report.append("  ○ GOOD (70-79%)        - Acceptable quality, minor gaps")
+        report.append("  ! FAIR (60-69%)        - Basic structure, needs enrichment")
+        report.append("  ✗ NEEDS WORK (<60%)    - Missing critical segments/data")
+        report.append("")
         
         return "\n".join(report)
 
