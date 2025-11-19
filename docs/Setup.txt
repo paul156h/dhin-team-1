@@ -1,0 +1,17 @@
+## SETUP INSTRUCTIONS FOR LINUX
+
+### 1. Create Virtual Environment
+python3 -m venv gan-env
+
+### 2. Activate Virtual Environment
+source gan-env/bin/activate
+
+### 3. Install Dependencies
+pip install -r requirements.txt
+
+## VS CODE SETUP (for IDE integration)
+
+### Configure Python Interpreter in VS Code
+1. Press Ctrl+Shift+P
+2. Type "Python: Select Interpreter"
+3. Choose the interpreter from gan-env

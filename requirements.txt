@@ -28,6 +28,3 @@ pytest>=6.0.0
 black>=21.0.0
 flake8>=3.9.0
 
-# Optional GUI Dependencies (install system packages separately)
-# tkinter - install via system package manager
-# python3-tk (Ubuntu/Debian) or python3-tkinter (Fedora)
