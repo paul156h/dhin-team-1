@@ -14,8 +14,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
+import hl7
 
-
+#input parameters : patient count, age ranges, gender, race and ethnicity
 
 
 SEX = ["M", "F"]
@@ -137,24 +138,32 @@ def weighted_choice(items: List, weights: List[float] = None):
     return random.choices(items, weights=weights, k=1)[0]
 
 
-def generate_row(columns: List[str]) -> dict:
+def generate_row(columns: List[str], age_min: int = None, age_max: int = None,
+                   gender_list: List[str] = None, gender_weights: List[float] = None,
+                   race_list: List[str] = None, race_weights: List[float] = None,
+                   ethnicity_list: List[str] = None, ethnicity_weights: List[float] = None) -> dict:
     subj_id = int(rand_digits(7))
     hadm_id = int(rand_digits(7))
     
-    age_bins = [
-        (0, 17, 0.20),
-        (18, 34, 0.22),
-        (35, 49, 0.21),
-        (50, 64, 0.20),
-        (65, 79, 0.12),
-        (80, 100, 0.05)
-    ]
-    age_bin_choice = weighted_choice(age_bins, [b[2] for b in age_bins])
-    age_years = random.randint(age_bin_choice[0], age_bin_choice[1])
+    # Use default age bins or custom range
+    if age_min is not None and age_max is not None:
+        age_years = random.randint(age_min, age_max)
+    else:
+        age_bins = [
+            (0, 17, 0.20),
+            (18, 34, 0.22),
+            (35, 49, 0.21),
+            (50, 64, 0.20),
+            (65, 79, 0.12),
+            (80, 100, 0.05)
+        ]
+        age_bin_choice = weighted_choice(age_bins, [b[2] for b in age_bins])
+        age_years = random.randint(age_bin_choice[0], age_bin_choice[1])
 
-    sex = weighted_choice(SEX, SEX_WEIGHTS)
-    race = weighted_choice(RACE_DESC, RACE_WEIGHTS)
-    ethnicity = weighted_choice(ETHNICITY, ETHNICITY_WEIGHTS)
+    # Use provided gender/race/ethnicity lists or defaults
+    sex = weighted_choice(gender_list or SEX, gender_weights or SEX_WEIGHTS)
+    race = weighted_choice(race_list or RACE_DESC, race_weights or RACE_WEIGHTS)
+    ethnicity = weighted_choice(ethnicity_list or ETHNICITY, ethnicity_weights or ETHNICITY_WEIGHTS)
 
     dx_code, dx_desc = random.choice(ICD10_COMMON)
     admission_type = random.choice(ADMISSION_TYPES)
@@ -293,11 +302,16 @@ def generate_row(columns: List[str]) -> dict:
     return row
 
 
-def generate_csv(schema_path: Path, num_rows: int) -> pd.DataFrame:
-    """Generate synthetic patient CSV data."""
+def generate_csv(schema_path: Path, num_rows: int, age_min: int = None, age_max: int = None,
+                 gender_list: List[str] = None, gender_weights: List[float] = None,
+                 race_list: List[str] = None, race_weights: List[float] = None,
+                 ethnicity_list: List[str] = None, ethnicity_weights: List[float] = None) -> pd.DataFrame:
+    """Generate synthetic patient CSV data with optional demographic overrides."""
     df_schema = pd.read_csv(schema_path, nrows=1)
     columns = list(df_schema.columns)
-    rows = [generate_row(columns) for _ in range(num_rows)]
+    rows = [generate_row(columns, age_min, age_max, gender_list, gender_weights,
+                         race_list, race_weights, ethnicity_list, ethnicity_weights)
+            for _ in range(num_rows)]
     return pd.DataFrame(rows, columns=columns)
 
 
@@ -391,27 +405,42 @@ def make_nk1(row):
     return f"NK1|1|{nk}"
 
 
-def row_to_message(row):
-    r = {k: (v if pd.notna(v) else '') for k, v in row.items()}
-    segs = []
-    segs.append(make_msh(r))
-    segs.append(make_evn(r))
-    segs.append(make_pid(r))
-    pv1 = make_pv1(r)
-    if pv1:
-        segs.append(pv1)
-    dg1 = make_dg1(r)
-    if dg1:
-        segs.append(dg1)
-    in1 = make_in1(r)
-    if in1:
-        segs.append(in1)
-    nk1 = make_nk1(r)
-    if nk1:
-        segs.append(nk1)
-    msg = '\r'.join(segs) + '\r'
-    return msg
+import hl7
 
+def row_to_message(row):
+    """Build an HL7 message using hl7py library."""
+    r = {k: (v if pd.notna(v) else '') for k, v in row.items()}
+    
+    # Build segment strings (pipe-delimited fields, caret-delimited components)
+    msh = make_msh(r)
+    evn = make_evn(r)
+    pid = make_pid(r)
+    pv1 = make_pv1(r)
+    dg1 = make_dg1(r)
+    in1 = make_in1(r)
+    nk1 = make_nk1(r)
+    
+    # Assemble segments into a single message
+    segments = [msh, evn, pid]
+    if pv1:
+        segments.append(pv1)
+    if dg1:
+        segments.append(dg1)
+    if in1:
+        segments.append(in1)
+    if nk1:
+        segments.append(nk1)
+    
+    # Parse and re-serialize with hl7py for proper formatting
+    msg_text = '\r'.join(segments)
+    try:
+        parsed = hl7.parse(msg_text)
+        formatted = str(parsed)  # Re-serialize to ensure proper HL7 format
+        return formatted + '\r'
+    except Exception as e:
+        # Fallback to plain message if parsing fails
+        print(f"Warning: HL7 parsing failed for row, using plain format: {e}")
+        return msg_text + '\r'
 
 def df_to_hl7_messages(df: pd.DataFrame) -> List[str]:
     """Convert DataFrame rows to HL7 messages."""
@@ -438,29 +467,61 @@ Examples:
     parser.add_argument("--schema", type=Path, required=True, help="Schema CSV (columns/order template).")
     parser.add_argument("--rows", type=int, default=200, help="Number of rows to generate.")
     parser.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility.")
-    parser.add_argument("--csv-out", type=Path, default=Path("generated_adt.csv"), help="Output CSV file path.")
+    parser.add_argument("--csv-out", type=Path, default=Path("generated_adt.csv"), help="Output CSV file path.") 
     parser.add_argument("--hl7-out", type=Path, default=Path("generated_adt_messages.hl7"), help="Output HL7 file path.")
+    
+    # Demographic parameters
+    parser.add_argument("--age-min", type=int, default=None, help="Minimum age (overrides default age distribution).")
+    parser.add_argument("--age-max", type=int, default=None, help="Maximum age (overrides default age distribution).")
+    parser.add_argument("--gender", type=str, nargs="+", default=None, help="Gender values to use (e.g., M F). Overrides default.")
+    parser.add_argument("--gender-weights", type=float, nargs="+", default=None, help="Gender weights (e.g., 0.5 0.5). Must match --gender length.")
+    parser.add_argument("--race", type=str, nargs="+", default=None, help="Race values to use (e.g., 'White' 'Black or African American'). Overrides default.")
+    parser.add_argument("--race-weights", type=float, nargs="+", default=None, help="Race weights. Must match --race length.")
+    parser.add_argument("--ethnicity", type=str, nargs="+", default=None, help="Ethnicity values (e.g., 'Hispanic or Latino' 'Not Hispanic or Latino'). Overrides default.")
+    parser.add_argument("--ethnicity-weights", type=float, nargs="+", default=None, help="Ethnicity weights. Must match --ethnicity length.")
+    
     args = parser.parse_args()
 
     random.seed(args.seed)
+    
+    # Validate and normalize demographic parameters
+    if args.age_min is not None and args.age_max is not None:
+        if args.age_min > args.age_max:
+            parser.error("--age-min must be <= --age-max")
+    
+    if args.gender_weights and args.gender:
+        if len(args.gender_weights) != len(args.gender):
+            parser.error("--gender-weights length must match --gender length")
+    
+    if args.race_weights and args.race:
+        if len(args.race_weights) != len(args.race):
+            parser.error("--race-weights length must match --race length")
+    
+    if args.ethnicity_weights and args.ethnicity:
+        if len(args.ethnicity_weights) != len(args.ethnicity):
+            parser.error("--ethnicity-weights length must match --ethnicity length")
 
     # Step 1: Generate CSV
     print(f"🔄 Generating {args.rows} rows from schema {args.schema}...")
-    df = generate_csv(args.schema, args.rows)
+    df = generate_csv(args.schema, args.rows,
+                     age_min=args.age_min, age_max=args.age_max,
+                     gender_list=args.gender, gender_weights=args.gender_weights,
+                     race_list=args.race, race_weights=args.race_weights,
+                     ethnicity_list=args.ethnicity, ethnicity_weights=args.ethnicity_weights)
     args.csv_out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.csv_out, index=False)
-    print(f"✅ CSV generated → {args.csv_out}")
+    print(f" CSV generated → {args.csv_out}")
 
     # Step 2: Convert to HL7
-    print(f"🔄 Converting CSV to HL7 v2.5.1 ADT messages...")
+    print(f" Converting CSV to HL7 v2.5.1 ADT messages...")
     messages = df_to_hl7_messages(df)
     args.hl7_out.parent.mkdir(parents=True, exist_ok=True)
     with open(args.hl7_out, 'w', encoding='utf-8', newline='') as f:
         for msg in messages:
             f.write(msg)
             f.write('\n')
-    print(f"✅ HL7 messages generated → {args.hl7_out}")
-    print(f"\n📊 Summary:")
+    print(f" HL7 messages generated → {args.hl7_out}")
+    print(f"\n Summary:")
     print(f"   - Rows:    {len(df)}")
     print(f"   - Columns: {len(df.columns)}")
     print(f"   - Columns with data: {sum(df[c].astype(str).ne('').any() for c in df.columns)}/{len(df.columns)}")
