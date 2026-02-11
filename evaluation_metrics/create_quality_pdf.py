@@ -189,17 +189,16 @@ HOW TO IMPROVE
 
 def main():
     """Main execution function"""
-    project_root = Path(__file__).parent.parent.parent.parent
-    adt_dir = project_root / "data" / "adt_messages"
-    outputs_dir = project_root / "outputs"
+    project_root = Path(__file__).parent.parent
+    adt_dir = project_root / "test_data" / "adt_messages"
+    outputs_dir = project_root / "test_data" / "sample_outputs"
     
     if not adt_dir.exists():
         print(f"ADT messages directory not found: {adt_dir}")
         sys.exit(1)
     
     if not outputs_dir.exists():
-        print(f"Outputs directory not found: {outputs_dir}")
-        sys.exit(1)
+        outputs_dir.mkdir(parents=True, exist_ok=True)
     
     adt_files = list(adt_dir.glob('*.adt.txt'))
     if not adt_files:

@@ -1,0 +1,10 @@
+MSH|^~\&|EHRGAN|EHRGANFac|EHRReceiver|EHRReceiverFac|20251110120200||ADT^A01|1761002034|P|2.5
+EVN|A01|20251110120200|||||
+PID|1|SYN-0003||PatientThree^Synthetic||19700315|F|||789 Pine Rd^^Somewhere^FL^32801|||||N|Hispanic|Hispanic or Latino
+NK1|1|Mother^Family|MOTHER
+PV1|1|E|WARD^789^3|E|||203^Lee^Michael^M^^Dr|||OB||||3|||207^Referring^MD^M|IP|VN||||||||||||||||01|20251110120200|
+PV2|||Routine exam
+OBX|1|NM|HR^Heart Rate||72|bpm|60-100|N
+AL1|1||^LATEX||SKIN_REACTION
+DG1|1|I9|Z00.00|HEALTH_SUPERVISION
+IN1|3|BCBS|76543210||CIGNA

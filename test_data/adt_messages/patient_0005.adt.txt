@@ -1,0 +1,11 @@
+MSH|^~\&|EHRGAN|EHRGANFac|EHRReceiver|EHRReceiverFac|20251110120400||ADT^A01|1761002036|P|2.5
+EVN|A01|20251110120400|||||
+PID|1|SYN-0005||PatientFive^Synthetic||19700510|F|||654 Oak Dr^^Boston^MA^02101|||||N|Asian|Not Hispanic or Latino
+NK1|1|Sister^Family|CONTACT
+PV1|1|E|WARD^654^5|E|||205^Davis^Jennifer^F^^Dr|||PEDS||||5|||209^Referring^Pediatrician^M|IP|VN||||||||||||||||01|20251110120400|
+PV2|||Well child visit
+OBX|1|NM|WT^Weight||125|lbs
+OBX|2|NM|HT^Height||66|in
+AL1|1||^SULFA||RASH
+DG1|1|I9|Z00.129|HEALTH_SUPERVISION
+IN1|5|BCBS|54321098||AETNA

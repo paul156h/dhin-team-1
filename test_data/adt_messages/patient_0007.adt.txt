@@ -1,0 +1,11 @@
+MSH|^~\&|EHRGAN|EHRGANFac|EHRReceiver|EHRReceiverFac|20251110120600||ADT^A01|1761002038|P|2.5
+EVN|A01|20251110120600|||||
+PID|1|SYN-0007||PatientSeven^Synthetic||19700425|F|||147 Birch Ave^^Seattle^WA^98101|||||N|Hispanic|Hispanic or Latino
+PV1|1|E|WARD^147^7|E|||207^Taylor^Linda^F^^Dr|||ONCO||||7|||211^Referring^Oncologist^M|IP|VN||||||||||||||||01|20251110120600|
+PV2|||Oncology follow-up|Cancer treatment
+OBX|1|NM|WBC^White Blood Cells||6.5|K/uL|4.5-11.0|N
+OBX|2|NM|HGB^Hemoglobin||13.2|g/dL|12.0-16.0|N
+AL1|1||^IODINE||SEVERE_REACTION
+DG1|1|I9|C34.90|LUNG_CANCER_UNSPECIFIED
+PR1|1|M11|32421|CHEMOTHERAPY
+IN1|7|BCBS|32109876||UNITED

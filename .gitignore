@@ -1,5 +1,4 @@
 # Virtual Environment
-gan-env/
 .venv/
 venv/
 env/
@@ -30,19 +29,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# PyTorch models and checkpoints
-*.pth
-*.pt
-*.ckpt
-*.model
-
-# Data
-*.csv
-*.json
-data/
-MNIST/
-datasets/
+# Generated outputs (keep sample outputs)
 outputs/
+*.log
 
 # IDE
 .vscode/

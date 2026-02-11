@@ -123,13 +123,16 @@ def similarity_score(adt_dist, delaware_dist, threshold=5.0):
 
 
 def main():
-    project_root = Path(__file__).parent.parent.parent.parent
-    adt_dir = project_root / "data" / "adt_messages"
-    output_dir = project_root / "outputs"
+    project_root = Path(__file__).parent.parent
+    adt_dir = project_root / "test_data" / "adt_messages"
+    output_dir = project_root / "test_data" / "sample_outputs"
     
     if not adt_dir.exists():
         print(f"Error: ADT directory not found: {adt_dir}")
         return
+    
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
     
     # Collect demographics from all ADT messages
     genders = []

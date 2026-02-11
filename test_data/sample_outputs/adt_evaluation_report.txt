@@ -1,0 +1,81 @@
+================================================================================
+ADT MESSAGE EVALUATION REPORT
+================================================================================
+
+SUMMARY
+--------------------------------------------------------------------------------
+Messages Evaluated:  10
+Average Quality:     77.9%  (GOOD)
+
+DETAILED RESULTS
+--------------------------------------------------------------------------------
+
+[ 1] patient_0001.adt.txt
+    Quality: 70.4% ○
+    Segments: 4/14 types, 4 total
+    Field Data: 72.7%
+    Present: MSH(1), EVN(1), PID(1), PV1(1)
+
+[ 2] patient_0002.adt.txt
+    Quality: 74.5% ○
+    Segments: 7/14 types, 7 total
+    Field Data: 65.0%
+    Present: MSH(1), EVN(1), PID(1), PV1(1), OBX(1), AL1(1), DG1(1)
+
+[ 3] patient_0003.adt.txt
+    Quality: 77.9% ○
+    Segments: 10/14 types, 10 total
+    Field Data: 55.0%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(1), AL1(1), DG1(1), IN1(1)
+
+[ 4] patient_0004.adt.txt
+    Quality: 81.6% ✓
+    Segments: 12/14 types, 14 total
+    Field Data: 53.0%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(2), AL1(2), DG1(1), PR1(1), GT1(1), IN1(1)
+
+[ 5] patient_0005.adt.txt
+    Quality: 77.7% ○
+    Segments: 10/14 types, 11 total
+    Field Data: 54.1%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(2), AL1(1), DG1(1), IN1(1)
+
+[ 6] patient_0006.adt.txt
+    Quality: 83.5% ✓
+    Segments: 13/14 types, 16 total
+    Field Data: 52.0%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(2), AL1(2), DG1(2), PR1(1), GT1(1), IN1(1), IN2(1)
+
+[ 7] patient_0007.adt.txt
+    Quality: 78.2% ○
+    Segments: 10/14 types, 11 total
+    Field Data: 55.9%
+    Present: MSH(1), EVN(1), PID(1), PV1(1), PV2(1), OBX(2), AL1(1), DG1(1), PR1(1), IN1(1)
+
+[ 8] patient_0008.adt.txt
+    Quality: 65.8% !
+    Segments: 6/14 types, 6 total
+    Field Data: 43.0%
+    Present: MSH(1), EVN(1), PID(1), PV1(1), OBX(1), DG1(1)
+
+[ 9] patient_0009.adt.txt
+    Quality: 83.3% ✓
+    Segments: 13/14 types, 17 total
+    Field Data: 51.6%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(3), AL1(2), DG1(2), PR1(1), GT1(1), IN1(1), IN2(1)
+
+[10] patient_0010.adt.txt
+    Quality: 86.2% ✓
+    Segments: 14/14 types, 21 total
+    Field Data: 54.1%
+    Present: MSH(1), EVN(1), PID(1), NK1(1), PV1(1), PV2(1), OBX(4), AL1(2), DG1(3), PR1(2), ROL(1), GT1(1), IN1(1), IN2(1)
+
+SCORING GUIDE
+--------------------------------------------------------------------------------
+Quality Score = Required (40%) + Standard (30%) + Completeness (30%)
+
+Quality Tiers:
+  ✓ EXCELLENT (80-100%)  - Production ready, comprehensive data
+  ○ GOOD (70-79%)        - Acceptable quality, minor gaps
+  ! FAIR (60-69%)        - Basic structure, needs enrichment
+  ✗ NEEDS WORK (<60%)    - Missing critical segments/data

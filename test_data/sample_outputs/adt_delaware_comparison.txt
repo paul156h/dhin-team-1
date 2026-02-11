@@ -1,0 +1,79 @@
+=============================================================
+ADT MESSAGE DEMOGRAPHICS vs DELAWARE CENSUS
+=============================================================
+SUMMARY
+-------------------------------------------------------------
+Total ADT Messages Analyzed: 10
+Total Patients: 10
+
+Similarity to Delaware Census (±5% threshold):
+  Gender      : MATCH ✓
+  Race        : NO MATCH ✗
+  Ethnicity   : MATCH ✓
+  Age Group   : NO MATCH ✗
+
+Overall: 2/4 demographic categories match Delaware consensus
+
+=============================================================
+
+GENDER DISTRIBUTION
+-----------------------------------
+ADT Percentages:
+  F                   :   50.0%
+  M                   :   50.0%
+
+Delaware Consensus:
+  F                   :   51.5%
+  M                   :   48.5%
+
+Within ±5% threshold: YES ✓
+
+RACE DISTRIBUTION
+------------------------------------
+ADT Percentages:
+  White               :   60.0%
+  Hispanic            :   20.0%
+  Black               :   10.0%
+  Asian               :   10.0%
+
+Delaware Consensus:
+  White               :   61.6%
+  Hispanic            :   18.7%
+  Black               :   12.4%
+  Two or More         :   10.2%
+  Other               :    8.4%
+  Asian               :    6.0%
+  American Indian     :    1.1%
+  Pacific Islander    :    0.2%
+
+Within ±5% threshold: NO ✗
+
+ETHNICITY DISTRIBUTION
+--------------------------------------------
+ADT Percentages:
+  Not Hispanic or Latino        :   80.0%
+  Hispanic or Latino            :   20.0%
+
+Delaware Consensus:
+  Not Hispanic or Latino        :   81.3%
+  Hispanic or Latino            :   18.7%
+
+Within ±5% threshold: YES ✓
+
+AGE GROUP DISTRIBUTION
+--------------------------------------------Sssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+ADT Percentages:
+  45-64               :  100.0%ssssssssssssssss
+
+Delaware Consensus:
+  <18                 :   21.7%
+  18-24               :    8.9%
+  25-44               :   25.6%
+  45-64               :   27.2%
+  65+                 :   16.6%
+
+Within ±5% threshold: NO ✗
+
+======================================================================
+Note: Threshold of ±5% is used for similarity comparison.
+======================================================================
