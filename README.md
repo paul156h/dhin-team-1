@@ -73,3 +73,7 @@ See `docs/Evaluation Metrics.md` for detailed information about:
 - Required vs standard segments
 - Field completeness calculation
 - Quality tiers and ratings
+
+---
+
+Created by Jason Martinez, University of Delaware
