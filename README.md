@@ -107,11 +107,3 @@ All fields are intentionally synthetic and designed for test/dev use only.
 
 See the project `LICENSE` file in the repository root for license terms.
 
-## Questions / next steps
-
-If you want, I can:
-
-- Add a `requirements.txt` and small test harness that asserts the generated HL7 messages contain required fields.
-- Add MLLP send functionality to push messages to a local HL7 listener for integration testing.
-
-Tell me which you'd prefer and I'll implement it.
