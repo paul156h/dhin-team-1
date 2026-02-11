@@ -77,3 +77,4 @@ See `docs/Evaluation Metrics.md` for detailed information about:
 ---
 
 Created by Jason Martinez, University of Delaware
+jmartgmz@udel.edu
