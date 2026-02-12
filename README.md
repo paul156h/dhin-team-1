@@ -1,6 +1,6 @@
 # DHIN Project - ADT Message Evaluation Metrics
 
-Quality evaluation system for HL7 ADT messages with scoring and visualization.
+Beginning quality evaluation system for HL7 ADT messages with scoring and visualization.
 
 ## Repository Structure
 
@@ -21,9 +21,10 @@ Quality evaluation system for HL7 ADT messages with scoring and visualization.
 
 ### Prerequisites
 
+- Windows 10 or later
 - Python 3.8+
 - pip package manager
-- Virtual environment (recommended)
+- Command Prompt
 
 ### Installation
 
@@ -34,19 +35,21 @@ Quality evaluation system for HL7 ADT messages with scoring and visualization.
    ```
 
 2. **Create and activate virtual environment**
-   ```bash
+   
+   Command Prompt:
+   ```cmd
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   venv\Scripts\activate
    ```
 
 3. **Install dependencies**
-   ```bash
+   ```cmd
    pip install -r requirements.txt
    ```
 
 ## Usage
 
-```bash
+```cmd
 # Evaluate all ADT messages and generate text report
 python evaluation_metrics/adt_evaluation_metrics.py
 
