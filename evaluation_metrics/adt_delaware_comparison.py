@@ -169,7 +169,7 @@ def main():
     # Generate report
     output_file = output_dir / "adt_delaware_comparison.txt"
     
-    with open(output_file, 'w') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         f.write("=" * 70 + "\n")
         f.write("ADT MESSAGE DEMOGRAPHICS vs DELAWARE CENSUS\n")
         f.write("=" * 70 + "\n\n")
