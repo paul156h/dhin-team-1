@@ -103,15 +103,6 @@ All fields are intentionally synthetic and designed for test/dev use only.
 - `schema_hl7_minimal.csv` — example HL7 schema used for testing.
 - `test_schema_delaware.csv` — tiny schema used for quick tests.
 
-## Evaluation Metrics
-
-For analysis and evaluation of HL7 message quality and pipeline performance, see the **[evaluation-metrics branch](https://github.com/paul156h/dhin-team-1/tree/evaluation-metrics)**. This branch contains:
-
-- Metrics for assessing HL7 message quality
-- Pipeline performance evaluation tools
-- Statistical analysis of generated data
-
 ## License & attribution
 
 See the project `LICENSE` file in the repository root for license terms.
-

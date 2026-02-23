@@ -1,0 +1,101 @@
+subject_id,gender,age,race,ethnicity,admission_type,discharge_location,insurance
+6022768,M,58,White,Not Hispanic or Latino,,,Private
+3008687,M,46,Black or African American,Not Hispanic or Latino,,,Private
+3322966,F,63,White,Not Hispanic or Latino,,,Medicaid
+6394225,F,1,White,Not Hispanic or Latino,,,Self Pay
+2596187,F,85,White,Not Hispanic or Latino,,,Private
+9954139,F,97,White,Not Hispanic or Latino,,,Other
+9767363,M,1,Other,Not Hispanic or Latino,,,No Charge
+1954781,F,12,Black or African American,Not Hispanic or Latino,,,Self Pay
+2948509,M,19,White,Not Hispanic or Latino,,,No Charge
+4120703,F,2,White,Not Hispanic or Latino,,,Medicare
+5326321,M,17,White,Hispanic or Latino,,,Medicaid
+3985659,M,28,Black or African American,Not Hispanic or Latino,,,No Charge
+762754,M,4,White,Hispanic or Latino,,,Medicaid
+7846198,F,63,White,Not Hispanic or Latino,,,Self Pay
+9388263,M,18,Other,Not Hispanic or Latino,,,Self Pay
+6535270,F,55,Black or African American,Not Hispanic or Latino,,,Self Pay
+2149696,F,42,White,Not Hispanic or Latino,,,Government
+3876210,M,57,White,Not Hispanic or Latino,,,Other
+284869,M,49,Asian,Not Hispanic or Latino,,,Other
+2472380,M,13,Black or African American,Hispanic or Latino,,,Medicare
+3885778,M,79,Black or African American,Not Hispanic or Latino,,,No Charge
+4032373,F,20,Black or African American,Not Hispanic or Latino,,,Medicaid
+6526716,M,56,Black or African American,Not Hispanic or Latino,,,No Charge
+9734353,F,46,Black or African American,Not Hispanic or Latino,,,Other
+3292475,F,26,White,Not Hispanic or Latino,,,Government
+7402426,M,25,White,Not Hispanic or Latino,,,Medicaid
+7952112,M,15,White,Not Hispanic or Latino,,,Medicare
+8406015,F,42,White,Not Hispanic or Latino,,,No Charge
+2611004,F,77,White,Not Hispanic or Latino,,,Medicaid
+8013752,F,13,Black or African American,Not Hispanic or Latino,,,No Charge
+7154294,M,33,Other,Not Hispanic or Latino,,,Private
+9459654,F,72,White,Not Hispanic or Latino,,,Government
+994184,F,34,White,Not Hispanic or Latino,,,Medicare
+5941535,M,50,White,Hispanic or Latino,,,Medicare
+3180901,F,10,Asian,Not Hispanic or Latino,,,Government
+2622097,M,31,White,Not Hispanic or Latino,,,Government
+2914220,F,56,White,Not Hispanic or Latino,,,Self Pay
+2608308,M,29,White,Not Hispanic or Latino,,,No Charge
+4570271,F,57,White,Not Hispanic or Latino,,,Other
+6385032,M,57,Two or More Races,Not Hispanic or Latino,,,Other
+4193408,F,13,Asian,Not Hispanic or Latino,,,Self Pay
+3939602,M,10,White,Not Hispanic or Latino,,,Medicaid
+1908112,M,1,White,Not Hispanic or Latino,,,Private
+4267963,M,49,Black or African American,Not Hispanic or Latino,,,Government
+5471685,F,28,White,Not Hispanic or Latino,,,Medicare
+7310956,F,21,White,Not Hispanic or Latino,,,Government
+2245766,M,70,Two or More Races,Not Hispanic or Latino,,,No Charge
+5341339,M,44,White,Not Hispanic or Latino,,,Private
+4603503,F,25,Asian,Not Hispanic or Latino,,,Medicare
+3446249,F,41,White,Not Hispanic or Latino,,,Medicaid
+1593788,M,57,White,Not Hispanic or Latino,,,No Charge
+432053,F,42,Other,Not Hispanic or Latino,,,Government
+9488906,F,28,White,Not Hispanic or Latino,,,Government
+2896106,F,45,Black or African American,Not Hispanic or Latino,,,Private
+1294210,F,52,White,Not Hispanic or Latino,,,Self Pay
+2427453,F,30,White,Not Hispanic or Latino,,,Private
+8518827,M,18,White,Not Hispanic or Latino,,,Medicare
+7310948,F,74,White,Not Hispanic or Latino,,,Self Pay
+845657,F,34,Black or African American,Not Hispanic or Latino,,,No Charge
+7302615,F,95,Black or African American,Not Hispanic or Latino,,,Medicare
+9595271,F,64,White,Not Hispanic or Latino,,,Medicare
+4912132,M,41,Other,Hispanic or Latino,,,Government
+9167007,M,59,White,Not Hispanic or Latino,,,No Charge
+3522492,F,10,Black or African American,Not Hispanic or Latino,,,No Charge
+7512170,F,95,Black or African American,Not Hispanic or Latino,,,Medicare
+5185571,F,34,Asian,Not Hispanic or Latino,,,Private
+5191676,F,62,Black or African American,Not Hispanic or Latino,,,Medicaid
+4614431,M,7,White,Not Hispanic or Latino,,,Other
+9989711,M,29,White,Not Hispanic or Latino,,,Medicare
+7734515,M,92,Other,Not Hispanic or Latino,,,Government
+134465,F,58,White,Not Hispanic or Latino,,,Medicare
+7760497,F,67,White,Not Hispanic or Latino,,,Private
+6479870,F,70,Black or African American,Not Hispanic or Latino,,,Medicaid
+2922273,F,91,Black or African American,Not Hispanic or Latino,,,Self Pay
+4259616,F,51,White,Hispanic or Latino,,,No Charge
+2076278,F,52,Other,Hispanic or Latino,,,Government
+4658152,M,24,Asian,Not Hispanic or Latino,,,Self Pay
+9490342,M,37,White,Not Hispanic or Latino,,,Private
+2117645,F,14,White,Hispanic or Latino,,,Government
+8467484,F,8,Black or African American,Not Hispanic or Latino,,,Medicare
+9421167,M,97,Asian,Not Hispanic or Latino,,,Medicaid
+4743241,M,68,White,Not Hispanic or Latino,,,No Charge
+2280528,M,53,White,Not Hispanic or Latino,,,No Charge
+363564,F,35,Other,Not Hispanic or Latino,,,Medicaid
+9807126,M,70,Other,Not Hispanic or Latino,,,Other
+6295735,M,79,White,Not Hispanic or Latino,,,Private
+7212525,M,55,Black or African American,Not Hispanic or Latino,,,Medicare
+7482705,M,35,Black or African American,Not Hispanic or Latino,,,Medicaid
+1158233,M,77,White,Not Hispanic or Latino,,,Medicaid
+4758050,F,74,White,Not Hispanic or Latino,,,Other
+2558653,M,20,Black or African American,Hispanic or Latino,,,Private
+3946606,M,21,Other,Not Hispanic or Latino,,,Medicaid
+5403053,F,37,White,Not Hispanic or Latino,,,Medicaid
+2739746,F,41,Asian,Hispanic or Latino,,,No Charge
+1337697,M,17,Black or African American,Hispanic or Latino,,,No Charge
+4626770,F,55,Black or African American,Not Hispanic or Latino,,,No Charge
+6566937,F,32,White,Not Hispanic or Latino,,,Private
+8733753,F,21,White,Hispanic or Latino,,,Medicaid
+9241640,F,51,Black or African American,Not Hispanic or Latino,,,Medicare
+4933313,M,25,White,Not Hispanic or Latino,,,Medicaid
