@@ -502,7 +502,7 @@ Examples:
             parser.error("--ethnicity-weights length must match --ethnicity length")
 
     # Step 1: Generate CSV
-    print(f"🔄 Generating {args.rows} rows from schema {args.schema}...")
+    print(f" Generating {args.rows} rows from schema {args.schema}...")
     df = generate_csv(args.schema, args.rows,
                      age_min=args.age_min, age_max=args.age_max,
                      gender_list=args.gender, gender_weights=args.gender_weights,
