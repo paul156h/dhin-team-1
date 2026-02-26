@@ -125,7 +125,7 @@ def similarity_score(adt_dist, delaware_dist, threshold=5.0):
 def main():
     project_root = Path(__file__).parent.parent
     adt_dir = project_root / "test_data" / "adt_messages"
-    output_dir = project_root / "test_data" / "sample_outputs"
+    output_dir = project_root / "outputs"
     
     if not adt_dir.exists():
         print(f"Error: ADT directory not found: {adt_dir}")

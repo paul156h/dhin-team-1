@@ -293,7 +293,7 @@ def main():
     # Get the data directory with ADT messages
     project_root = Path(__file__).parent.parent
     adt_dir = project_root / "test_data" / "adt_messages"
-    outputs_dir = project_root / "test_data" / "sample_outputs"
+    outputs_dir = project_root / "outputs"
     
     if not adt_dir.exists():
         print(f"ADT messages directory not found: {adt_dir}")
